@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Quick)
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
-message("openSSL:"  ${OpenSSL_LIBRARIES} "OpenSSL found: Version ${OPENSSL_VERSION}")
+message( "OpenSSL found: Version ${OPENSSL_VERSION}")
 else()
 message("openSSL not found!")
 endif()
@@ -50,8 +50,8 @@ set_target_properties(appBC_Wallet_Qt PROPERTIES
 
 target_link_libraries(appBC_Wallet_Qt
     PRIVATE Qt6::Quick
-    crypto
-    ${OpenSSL_LIBRARIES}
+    #crypto
+    ${OPENSSL_LIBRARIES}
 )
 
 include(GNUInstallDirs)
