@@ -5,7 +5,9 @@ set (Project_Executable appBC_Wallet_Qt)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Quick Network Sql Qml Quick Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
 message( "OpenSSL found: Version ${OPENSSL_VERSION}")
@@ -15,13 +17,18 @@ endif()
 qt_policy(SET QTP0001 OLD)
 #qt_standard_project_setup(REQUIRES 6.5)
 set (Project_Headers
+    src/Controller.h
+    src/DataBaseMain.h
     src/Block.h
     src/Blockchain.h
     src/Transaction.h
     src/Wallet.h
+
 )
 set (Project_Sources
     main.cpp
+    src/Controller.cpp
+    src/DataBaseMain.cpp
     src/Block.cpp
     src/Blockchain.cpp
     src/Transaction.cpp
@@ -32,11 +39,16 @@ qt_add_executable(${Project_Executable}
     ${Project_Sources}
 )
 
+
+target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql)
+target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core)
 qt_add_qml_module(${Project_Executable}
     URI ${PROJECT_NAME}
     VERSION 1.0
     QML_FILES
         Main.qml
+        SOURCES
+        SOURCES
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -51,7 +63,7 @@ set_target_properties(${Project_Executable} PROPERTIES
 )
 
 target_link_libraries(${Project_Executable}
-    PRIVATE Qt6::Quick
+    PRIVATE Qt6::Quick Qt6::Sql
     ${OPENSSL_LIBRARIES}
 )
 
