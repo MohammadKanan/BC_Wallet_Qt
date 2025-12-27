@@ -2,11 +2,15 @@
 #include <iostream>  // Include iostream for std::cerr
 #include <openssl/rand.h>
 #include <openssl/pem.h>
+#include <qlogging.h>
+#include <src/DataBaseMain.h>
+#include <QDebug>
 
 // Constructor to initialize a Wallet with given ID
 
 Wallet::Wallet(std::string id) : id(id), balance(0.0f), publicKey(nullptr), privateKey(nullptr) {
     generateKeys();
+
 }
 
 // Destructor to free RSA key pairs
@@ -31,7 +35,7 @@ void Wallet::generateKeys() {
     BIGNUM* exponent = BN_new();
     BN_set_word(exponent, RSA_F4);  // Public exponent
     RSA_generate_key_ex(privateKey, 2048, exponent, nullptr);
-    
+    qDebug() << "Key: " << privateKey;
     // Create a new RSA object for the public key and set its fields
     publicKey = RSA_new();
     RSA_set0_key(publicKey, BN_dup(RSA_get0_n(privateKey)), BN_dup(exponent), nullptr);
@@ -44,7 +48,9 @@ void Wallet::generateKeys() {
         PEM_write_bio_RSAPublicKey(bio, publicKey);
         size_t keylen = BIO_pending(bio);
         publicKeyStr = (char*)malloc(keylen + 1);
+
         BIO_read(bio, publicKeyStr, keylen);
+        qDebug() << "publicKeyStr :" << publicKeyStr;
         publicKeyStr[keylen] = 0;
         BIO_free_all(bio);
 
