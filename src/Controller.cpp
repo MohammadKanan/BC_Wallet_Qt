@@ -11,6 +11,7 @@ Controller::Controller(QObject *parent)
 void Controller::StartOff()
 {
     auto dataB = DataBaseMain();
+
     Blockchain myBlockchain;
     std::vector<Wallet*> wallets;
 

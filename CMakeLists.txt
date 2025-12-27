@@ -5,7 +5,7 @@ set (Project_Executable appBC_Wallet_Qt)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Sql Qml Quick Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Sql Qml Gui Widgets)
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
 message( "OpenSSL found: Version ${OPENSSL_VERSION}")
@@ -38,7 +38,7 @@ qt_add_executable(${Project_Executable}
 )
 
 
-target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql Qt6::Gui ${OPENSSL_LIBRARIES})
+target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql Qt6::Gui Qt6::Widgets ${OPENSSL_LIBRARIES})
 qt_add_qml_module(${Project_Executable}
     URI ${PROJECT_NAME}
     VERSION 1.0

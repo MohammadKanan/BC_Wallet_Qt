@@ -4,6 +4,7 @@
 #include "Block.h"
 #include "Transaction.h"
 #include "Wallet.h"
+#include <QString>
 
 class Blockchain {
 private:

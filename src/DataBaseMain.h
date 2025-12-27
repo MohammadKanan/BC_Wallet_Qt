@@ -12,7 +12,9 @@ public:
 
 private:
     bool CreateSQLLiteDB();
-    bool CreateWalletsDB();
+    bool CreateTables();
+    bool CreateWalletsTable();
+    bool StoreNewWallet();
     QSqlDatabase bc_DB;
 
 signals:
