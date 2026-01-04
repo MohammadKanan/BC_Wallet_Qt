@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(BC_Wallet_Qt VERSION 0.1 LANGUAGES CXX)
 set (Project_Executable appBC_Wallet_Qt)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -38,6 +40,8 @@ qt_add_executable(${Project_Executable}
     ${Project_Sources}
 )
 
+get_target_property(TARGET_CXX_STANDARD appBC_Wallet_Qt CXX_STANDARD)
+message(STATUS "The C++ standard for my_target is: ${TARGET_CXX_STANDARD}")
 
 target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql Qt6::Gui Qt6::Widgets ${OPENSSL_LIBRARIES})
 qt_add_qml_module(${Project_Executable}

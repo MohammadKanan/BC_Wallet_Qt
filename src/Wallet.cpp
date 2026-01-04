@@ -39,8 +39,19 @@ void Wallet::generateKeys() {
     qDebug() << "Key: " << privateKey;
     // Create a new RSA object for the public key and set its fields
     publicKey = RSA_new();
-    RSA_set0_key(publicKey, BN_dup(RSA_get0_n(privateKey)), BN_dup(exponent), nullptr);
-    
+    auto result = RSA_set0_key(publicKey, BN_dup(RSA_get0_n(privateKey)), BN_dup(exponent), nullptr);
+    if(result != 1 )
+        qDebug() << "RSA_set0_key Failed " << result;
+    qDebug() << "pUBLIC KEY :" << publicKey;
+    /// Generate hash / Wallet ID
+    ///
+    unsigned int len = strlen ((const char*) publicKey);
+    SHA256_CTX sha256;
+    SHA256_Init (&sha256);
+    SHA256_Update (&sha256, publicKey, len);
+    SHA256_Final (WalletAddress, &sha256);
+    qDebug() << "Wallet Hash :" << WalletAddress;
+    //
     // Free the exponent as it is duplicated in publicKey and privateKey
     BN_free(exponent);
 
@@ -71,7 +82,7 @@ float Wallet::getBalance()
 
 bool Wallet::storeWalletData()
 {
-    DataBaseMain db;
+
     db.StoreNewWallet(theID(), getPublicKey() , getPrivateKey() , getBalance());
 }
 

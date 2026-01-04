@@ -5,6 +5,8 @@
 #include <vector>
 #include <openssl/rsa.h>
 #include "Transaction.h"
+#include <openssl/sha.h>
+#include <src/DataBaseMain.h>
 
 class Wallet {
 public:
@@ -25,6 +27,7 @@ public:
     std::string id; // Wallet ID
     float balance; // Wallet balance
     RSA* publicKey; // Public key of the wallet for verification
+    unsigned char WalletAddress [SHA256_DIGEST_LENGTH];
 
 private:
     RSA* privateKey;  // Private key for signing transactions
@@ -32,6 +35,7 @@ private:
     RSA* getPrivateKey();
     float getBalance();
     bool storeWalletData();
+     DataBaseMain db;
 };
 
 #endif // WALLET_H
