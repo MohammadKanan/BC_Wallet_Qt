@@ -87,6 +87,7 @@ bool Wallet::storeWalletData()
 {
 
     db.StoreNewWallet(theID(), getPublicKey() , getPrivateKey() , getBalance());
+    return true;
 }
 
 RSA *Wallet::load_private_key_from_string(const std::string &private_key_pem)
@@ -114,7 +115,9 @@ Transaction Wallet::sendFunds(Wallet& receiver, float amount) {
     int nonce = 12345;  // Replace with your nonce generation logic
 
     Transaction tx(id, receiver.id, amount, nonce);
+#if not defined(_WIN32) || not defined(WIN32)
     tx.sign(privateKey);  // Sign the transaction
+#endif
     std::cout << privateKey << std::endl;
 
     return tx;

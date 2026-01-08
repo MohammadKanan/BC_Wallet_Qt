@@ -48,7 +48,7 @@ void NetClient::initiateoutSocket()
     QObject::connect(txSocket.get(), &QTcpSocket::errorOccurred , this , [&](){
         qDebug() << "Socket error:" << txSocket->errorString();
     });
-    //txSocket->connectToHost("15.235.14.92",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("15.235.14.92",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 

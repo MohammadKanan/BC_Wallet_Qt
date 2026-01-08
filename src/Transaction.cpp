@@ -18,7 +18,7 @@ Transaction::Transaction(std::string sender, std::string receiver, float amount,
     : sender(sender), receiver(receiver), amount(amount), nonce(nonce) {}
 
 // Method to sign a transaction
-
+#if not defined(_WIN32) || not defined(WIN32)
 void Transaction::sign(RSA* privateKey) {
 
     std::string dataToSign = sender + receiver + std::to_string(amount) + std::to_string(nonce);
@@ -40,7 +40,7 @@ void Transaction::sign(RSA* privateKey) {
 
     std::cout << "Signed successfully. Signature Length: " << signatureLength << "\n";
 }
-
+#endif
 
 // Check overall validity of the transaction
 
