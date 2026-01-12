@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QTcpSocket>
+#include <QDateTime>
 
 class NetClient : public QObject
 {
@@ -15,6 +16,7 @@ private:
     QSharedPointer<QTcpSocket> txSocket;
     bool verackSent=false;
     void startHandShake();
+    QByteArray buildVersionMsg();
     void initiateoutSocket();
 
 signals:
