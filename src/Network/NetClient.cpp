@@ -98,14 +98,18 @@ void NetClient::initiateoutSocket()
         }
         else{
             const auto magicWord= data.left(4);
-            qDebug() << "magicWord:" << magicWord;
-            const auto command = data.mid(4,12);
-            qDebug() << "Command:" << command;
-            const auto size =data.mid(17,2).toInt();
+            qDebug() << "magicWord:" << magicWord.toHex();
+            auto command = data.mid(4,12);
+            const QString commandSTR = QString::fromUtf8(command);
+            qDebug() << "Command:" << commandSTR;
+            if(commandSTR.startsWith("inv"))
+                qDebug() << "caught Inv command .........................";
+
+            const auto size =data.mid(16,2).toInt();
             qDebug() << "payload size:" << size;
-            const auto checksum = data.mid(19,4);
+            const auto checksum = data.mid(18,4);
             qDebug() << "Checksum :" << checksum;
-            const auto payload = data.mid(23,data.size()-1);
+            const auto payload = data.mid(22,data.size()-1);
             qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
         }
     });
