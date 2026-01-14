@@ -49,9 +49,8 @@ std::string sha256(const std::string str)  {
 NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
-    //dnsLockUp* dns = new dnsLockUp;
-    //this->initiateoutSocket();
-    const auto versionMSG=buildVersionMsg();
+    dnsLockUp* dns = new dnsLockUp;
+    this->initiateoutSocket();
 }
 
 void NetClient::sendMessage(QByteArray data)
@@ -62,7 +61,7 @@ void NetClient::sendMessage(QByteArray data)
 void NetClient::startHandShake()
 {
     const auto versionMSG=buildVersionMsg();
-    //sendMessage(versionMSG);
+    sendMessage(versionMSG);
 }
 
 QByteArray NetClient::buildVersionMsg()
@@ -72,13 +71,14 @@ QByteArray NetClient::buildVersionMsg()
     data.append("F9BEB4D9"); // magic word
     data+= "76657273696F6E0000000000"; // "version"
     data += "55000000"; //Size
-    data += "2C2F86F3"; // checksum
+    //data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
     QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
     const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(payLoad).toStdString()));
     //QByteArray hash_0 = QByteArray::fromStdString(hash1);
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
     const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
+    data += _checksum; // checksum
     qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
     data += payLoad ;
     const auto data2 = QByteArray::fromHex(data);
@@ -129,7 +129,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("69.250.215.150",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("218.255.242.114",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
