@@ -12,34 +12,6 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-std::vector<unsigned char> single_sha256(const unsigned char* data, size_t length) {
-    std::vector<unsigned char> hash(SHA256_DIGEST_LENGTH);
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, data, length);
-    SHA256_Final(hash.data(), &sha256);
-    return hash;
-}
-
-// Function to perform a double SHA-256 hash (HASH256)
-std::vector<unsigned char> double_sha256(const unsigned char* data, size_t length) {
-    // First hash
-    std::vector<unsigned char> hash1 = single_sha256(data, length);
-
-    // Second hash on the result of the first hash (which is always 32 bytes)
-    std::vector<unsigned char> hash2 = single_sha256(hash1.data(), hash1.size());
-
-    return hash2;
-}
-
-// Helper function to convert a byte vector to a hexadecimal string for display
-std::string bytes_to_hex_string(const std::vector<unsigned char>& bytes) {
-    std::stringstream ss;
-    for (unsigned char byte : bytes) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)byte;
-    }
-    return ss.str();
-}
 
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
@@ -103,22 +75,11 @@ QByteArray NetClient::buildVersionMsg()
     data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
     QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
-    //QByteArrayView view_payLoad(payLoad);
-    const unsigned char* input_data = reinterpret_cast<const unsigned char*>(payLoad.constData());
-    size_t input_length = payLoad.length();
-     std::vector<unsigned char> final_hash = double_sha256(input_data, input_length);
-    std::string hex_hash = bytes_to_hex_string(final_hash);
-    const auto hash1 = sha256_2(QByteArray::fromHex(payLoad).toStdString());
-    QByteArray hash_0 = QByteArray::fromStdString(hash1);
-    const auto hash2 = sha256_2(QByteArray::fromHex(hash_0).toStdString()); // 2C2F86F3
-    qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" ;
-
-    //unsigned char* hashResult;
-    //SHA256((unsigned char*)in.data(),in.length(),hashResult);
-    //int s = strlen((char*)hashResult);
-    //unsigned char* hashFinal;
-    //SHA256(hashResult , s , hashResult);
-    //qDebug() << "HASH2 :" << hashFinal;
+    const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(payLoad).toStdString()));
+    //QByteArray hash_0 = QByteArray::fromStdString(hash1);
+    const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
+    const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
+    qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
     data += payLoad ;
     const auto data2 = QByteArray::fromHex(data);
     return data2;
