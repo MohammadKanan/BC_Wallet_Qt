@@ -6,7 +6,7 @@
 //
 #include <iostream>
 #include <string>
-
+#include <QtEndian>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
@@ -73,6 +73,7 @@ QByteArray NetClient::buildVersionMsg()
     data += "55000000"; //Size
     //data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
+    const auto PL = buildPayload();
     QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
     const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(payLoad).toStdString()));
     //QByteArray hash_0 = QByteArray::fromStdString(hash1);
@@ -84,6 +85,19 @@ QByteArray NetClient::buildVersionMsg()
     const auto data2 = QByteArray::fromHex(data);
     return data2;
 
+}
+
+QByteArray NetClient::buildPayload()
+{
+    // version ..
+    QByteArray payLoad;
+    payLoad.append("7F1101");
+    auto _services = "0000000000000000";
+    payLoad.append(_services);
+    auto _now = QDateTime::currentDateTime().toSecsSinceEpoch();
+    const auto _now2 = qToLittleEndian(_now);
+    QString _nowHex = QByteArray::number(_now2);
+    qDebug() << "LE Time :" << _nowHex;
 }
 
 void NetClient::initiateoutSocket()
@@ -100,7 +114,7 @@ void NetClient::initiateoutSocket()
         // Read data from the socket
         QByteArray data = txSocket->readAll();
         QByteArray hexAsciiData = data.toHex();
-        qDebug() << "Data received:" << hexAsciiData;
+        //qDebug() << "Data received:" << hexAsciiData;
         if(!verackSent){
             data = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
             const auto data2 = QByteArray::fromHex(data);

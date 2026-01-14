@@ -17,6 +17,7 @@ private:
     bool verackSent=false;
     void startHandShake();
     QByteArray buildVersionMsg();
+    QByteArray buildPayload();
     void initiateoutSocket();
 
 signals:
