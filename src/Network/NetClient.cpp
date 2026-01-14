@@ -49,8 +49,9 @@ std::string sha256(const std::string str)  {
 NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
-    dnsLockUp* dns = new dnsLockUp;
-    this->initiateoutSocket();
+    //dnsLockUp* dns = new dnsLockUp;
+    //this->initiateoutSocket();
+    buildPayload();
 }
 
 void NetClient::sendMessage(QByteArray data)
@@ -61,7 +62,7 @@ void NetClient::sendMessage(QByteArray data)
 void NetClient::startHandShake()
 {
     const auto versionMSG=buildVersionMsg();
-    sendMessage(versionMSG);
+    //sendMessage(versionMSG);
 }
 
 QByteArray NetClient::buildVersionMsg()
@@ -95,9 +96,13 @@ QByteArray NetClient::buildPayload()
     auto _services = "0000000000000000";
     payLoad.append(_services);
     auto _now = QDateTime::currentDateTime().toSecsSinceEpoch();
-    const auto _now2 = qToLittleEndian(_now);
-    QString _nowHex = QByteArray::number(_now2);
-    qDebug() << "LE Time :" << _nowHex;
+    //const auto _now2 = qToLittleEndian(_now);
+    QString _nowHex = QByteArray::number(_now,16);
+    qint64 result;
+    qToLittleEndian(&_nowHex, &result );
+     QString _swapped = QString::number(result);
+    qDebug() << "LE Time :" << _nowHex <<  _swapped;
+    return QByteArray();
 }
 
 void NetClient::initiateoutSocket()
