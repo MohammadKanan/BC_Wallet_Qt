@@ -71,10 +71,18 @@ QByteArray NetClient::buildVersionMsg()
     QByteArray data;
     data.append("F9BEB4D9"); // magic word
     data+= "76657273696F6E0000000000"; // "version"
-    data += "50000000"; //Size
+    const auto PL = buildPayload();
+    const auto size = PL.length();
+    QByteArray plLength(4, '\0');
+    plLength.prepend(QByteArray::number(size/2, 16));
+    QString plsizeSTR(plLength);
+    //plLength.resize(4);
+    QByteArray ss = plsizeSTR.left(8).toLocal8Bit();
+    data += ss;
+    qDebug() << "plLength:" << plsizeSTR.left(8);
+    //data += "50000000"; //Size
     //data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
-    const auto PL = buildPayload();
     qDebug() << "New PL :" << PL;
     QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
     qDebug() << "Size : " << PL.length();
@@ -93,7 +101,7 @@ QByteArray NetClient::buildPayload()
 {
     // version ..
     QByteArray payLoad;
-    payLoad.append("7E1101");
+    payLoad.append("7F1101");
     auto _services = "0000000000000000";
     payLoad.append(_services);
     // LE time
@@ -183,7 +191,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("69.250.215.150",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("127.0.0.1",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
