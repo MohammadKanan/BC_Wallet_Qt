@@ -18,7 +18,9 @@ private:
     void startHandShake();
     QByteArray buildVersionMsg();
     QByteArray buildPayload();
+    void ToLittleEndian(QByteArray *ba);
     void initiateoutSocket();
+
 
 signals:
 };

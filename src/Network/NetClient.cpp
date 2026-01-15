@@ -50,8 +50,8 @@ NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
     //dnsLockUp* dns = new dnsLockUp;
-    //this->initiateoutSocket();
-    buildPayload();
+    this->initiateoutSocket();
+    //buildPayload();
 }
 
 void NetClient::sendMessage(QByteArray data)
@@ -62,7 +62,7 @@ void NetClient::sendMessage(QByteArray data)
 void NetClient::startHandShake()
 {
     const auto versionMSG=buildVersionMsg();
-    //sendMessage(versionMSG);
+    sendMessage(versionMSG);
 }
 
 QByteArray NetClient::buildVersionMsg()
@@ -71,18 +71,19 @@ QByteArray NetClient::buildVersionMsg()
     QByteArray data;
     data.append("F9BEB4D9"); // magic word
     data+= "76657273696F6E0000000000"; // "version"
-    data += "55000000"; //Size
+    data += "50000000"; //Size
     //data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
     const auto PL = buildPayload();
+    qDebug() << "New PL :" << PL;
     QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
-    const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(payLoad).toStdString()));
-    //QByteArray hash_0 = QByteArray::fromStdString(hash1);
+    qDebug() << "Size : " << PL.length();
+    const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(PL).toStdString()));
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
     const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
     data += _checksum; // checksum
     qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
-    data += payLoad ;
+    data += PL ;
     const auto data2 = QByteArray::fromHex(data);
     return data2;
 
@@ -92,17 +93,51 @@ QByteArray NetClient::buildPayload()
 {
     // version ..
     QByteArray payLoad;
-    payLoad.append("7F1101");
+    payLoad.append("7E1101");
     auto _services = "0000000000000000";
     payLoad.append(_services);
+    // LE time
     auto _now = QDateTime::currentDateTime().toSecsSinceEpoch();
-    //const auto _now2 = qToLittleEndian(_now);
-    QString _nowHex = QByteArray::number(_now,16);
-    qint64 result;
-    qToLittleEndian(&_nowHex, &result );
-     QString _swapped = QString::number(result);
-    qDebug() << "LE Time :" << _nowHex <<  _swapped;
-    return QByteArray();
+    QByteArray _nowHex = QByteArray::number(_now,16);
+    char frameBuffer[256];
+    qToLittleEndian(_nowHex, frameBuffer);
+    const auto result = QByteArray::fromRawData(reinterpret_cast<const char*>(frameBuffer), 16);
+    qDebug() << "LE Before :" << _nowHex;
+    ToLittleEndian(&_nowHex);
+    qDebug() << "LE Time :" << _nowHex <<  "/";
+    payLoad.append(_nowHex);
+    // Remote Services
+    const auto remote_Services = "0000000000000000";
+    payLoad.append(remote_Services);
+    // Remote IP
+    const auto rem_IP = "00000000000000000000FFFF2E13894A";
+    payLoad.append(rem_IP);
+    const auto rem_Port = "208D";
+    payLoad.append(rem_Port);
+    const auto local_Services = "0000000000000000";
+    payLoad.append(local_Services);
+    const auto local_IP = "00000000000000000000FFFF7F000001";
+    payLoad.append(local_IP);
+    const auto local_Port = "208D";
+    payLoad.append(local_Port);
+    payLoad.append("00000000000000000000000000");
+    return payLoad;
+    const auto Nonce = "0000000000000000";
+    payLoad.append(Nonce);
+    const auto User_Agent = "00";
+    payLoad.append(User_Agent);
+    const auto Last_Block = "0000";
+    payLoad.append(Last_Block);
+    qDebug() << "PAYLOAD :" << payLoad;
+    return payLoad;
+}
+
+void NetClient::ToLittleEndian(QByteArray *ba)
+{
+    std::reverse(ba->begin(), ba->end());
+    for (int i = 0 ; i < ba->length() ; i+=2){
+         std::reverse(ba->begin()+i, ba->begin()+i+2);
+    }
 }
 
 void NetClient::initiateoutSocket()
@@ -148,7 +183,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("218.255.242.114",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("69.250.215.150",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
