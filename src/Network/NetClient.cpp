@@ -73,19 +73,18 @@ QByteArray NetClient::buildVersionMsg()
     data+= "76657273696F6E0000000000"; // "version"
     const auto PL = buildPayload();
     const auto size = PL.length();
-    QByteArray plLength(4, '\0');
-    plLength.prepend(QByteArray::number(size/2, 16));
-    QString plsizeSTR(plLength);
-    //plLength.resize(4);
-    QByteArray ss = plsizeSTR.left(8).toLocal8Bit();
-    data += ss;
-    qDebug() << "plLength:" << plsizeSTR.left(8);
+    auto sizeHex = QByteArray::number(size/2 , 16);
+    qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    while (sizeHex.length() < 8){
+        sizeHex.append("0");
+    }
+    qDebug() << "Size array final :" <<sizeHex << "/" <<  sizeHex.length();
+    data += sizeHex;
     //data += "50000000"; //Size
     //data += "2C2F86F3"; // checksum
     //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
     qDebug() << "New PL :" << PL;
-    QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
-    qDebug() << "Size : " << PL.length();
+    //QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
     const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(PL).toStdString()));
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
     const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
@@ -191,7 +190,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("127.0.0.1",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("86.201.225.172",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
