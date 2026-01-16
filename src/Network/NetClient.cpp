@@ -70,20 +70,18 @@ QByteArray NetClient::buildVersionMsg()
     qDebug() << "Building HASH";
     QByteArray data;
     data.append("F9BEB4D9"); // magic word
-    data+= "76657273696F6E0000000000"; // "version"
-    const auto PL = buildPayload();
+    data+= "76657273696F6E0000000000"; // "version command"
+    const auto PL = buildVersinMSG_Payload();
+    // size
     const auto size = PL.length();
     auto sizeHex = QByteArray::number(size/2 , 16);
     qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 8){
-        sizeHex.append("0");
+        sizeHex.append("0"); // make it 4 bytes
     }
     qDebug() << "Size array final :" <<sizeHex << "/" <<  sizeHex.length();
     data += sizeHex;
-    //data += "50000000"; //Size
-    //data += "2C2F86F3"; // checksum
-    //data = "F9BEB4D976657273696F6E0000000000550000002C2F86F3"; // fe687685ce5b
-    qDebug() << "New PL :" << PL;
+    // checksum
     //QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
     const auto hash1 = QByteArray::fromStdString(sha256_2(QByteArray::fromHex(PL).toStdString()));
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
@@ -96,7 +94,7 @@ QByteArray NetClient::buildVersionMsg()
 
 }
 
-QByteArray NetClient::buildPayload()
+QByteArray NetClient::buildVersinMSG_Payload()
 {
     // version ..
     QByteArray payLoad;
@@ -172,15 +170,15 @@ void NetClient::initiateoutSocket()
         else{
             const auto magicWord= data.left(4);
             qDebug() << "magicWord:" << magicWord.toHex();
-            auto command = data.mid(4,12);
+            auto command = data.mid(4,6);
             const QString commandSTR = QString::fromUtf8(command);
-            qDebug() << "Command:" << commandSTR;
+            qDebug() << "Command:" << commandSTR.trimmed();
             if(commandSTR.startsWith("inv"))
                 qDebug() << "caught Inv command .........................";
 
-            const auto size =data.mid(16,2).toInt();
+            const auto size =data.mid(11,2).toInt();
             qDebug() << "payload size:" << size;
-            const auto checksum = data.mid(18,4);
+            const auto checksum = data.mid(14,4);
             qDebug() << "Checksum :" << checksum;
             const auto payload = data.mid(22,data.size()-1);
             qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
