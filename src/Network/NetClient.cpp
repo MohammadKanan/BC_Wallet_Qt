@@ -163,10 +163,18 @@ QByteArray NetClient::ExtractCommand(const QByteArray data) const
 void NetClient::ProccessInvMsg(const QByteArray invArray) const
 {
     qDebug() << "inv payload :" << invArray.toHex();
-    qDebug() << "Count = " << invArray.toHex().left(2);
-    const auto invHash = invArray.toHex().mid(2,32);
-    qDebug() << " Type:" << invHash.left(8);
-    qDebug() << " Hash" << invHash.mid(8,invHash.length()-1);
+    bool ok;
+    const auto _Count = invArray.toHex().left(2);
+    const auto count = _Count.toInt(&ok,16);
+    qDebug() << "Count = " << count;
+
+    const auto invHash = invArray.toHex().mid(2,invArray.toHex().length()-1);
+    for(int i = 0 ; i < count ; i++){
+        qDebug() << " HASH " << i << "/" << invHash.mid(i,72);
+    }
+    //qDebug() << " Type:" << invHash.left(8);
+    //qDebug() << " Hash" << invHash.mid(8,invHash.length()-1);
+    qDebug() << " Hash" << invHash;
 
 }
 void NetClient::initiateoutSocket()
