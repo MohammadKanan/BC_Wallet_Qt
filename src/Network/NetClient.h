@@ -20,6 +20,7 @@ private:
     QByteArray buildVersinMSG_Payload();
     void ToLittleEndian(QByteArray *ba);
     void initiateoutSocket();
+    QByteArray ExtractCommand(const QByteArray data) const;
 
 
 signals:

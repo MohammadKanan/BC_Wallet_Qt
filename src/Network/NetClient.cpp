@@ -167,23 +167,13 @@ void NetClient::initiateoutSocket()
             sendMessage(data2);
             verackSent = !verackSent;
         }
-        else{
+        {
             const auto magicWord= data.left(4);
             qDebug() << "magicWord:" << magicWord.toHex();
             QByteArray command2 = data.mid(4,12);
-            QByteArray command = QByteArray::fromRawData(command2, command2.length());
-            QByteArray::iterator iter = command.begin();
-            char fixed[255];
-            int index = 0;
-            while(iter != command.end())
-            {
-                QChar c = *iter;
-                if (c != '\0') fixed[index++] = c.toLatin1();
-                iter++;
-            }
-            fixed[index] = '\0';
-            qDebug() << "fixed :" << fixed << "\n";
-            const QString commandSTR = QString::fromUtf8(fixed);
+
+            QByteArray command = ExtractCommand(command2);
+            const QString commandSTR = QString::fromUtf8(command);
             qDebug() << "Command:" << commandSTR  << " / " << command;
             if(commandSTR.startsWith("inv"))
                 qDebug() << "caught Inv command .........................";
@@ -202,5 +192,21 @@ void NetClient::initiateoutSocket()
 
     txSocket->connectToHost("86.201.225.172",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
+}
+
+QByteArray NetClient::ExtractCommand(const QByteArray data) const
+{
+    QByteArray command = QByteArray::fromRawData(data, data.length());
+    QByteArray::iterator iter = command.begin();
+    char fixed[255];
+    int index = 0;
+    while(iter != command.end())
+    {
+        QChar c = *iter;
+        if (c != '\0') fixed[index++] = c.toLatin1();
+        iter++;
+    }
+    fixed[index] = '\0';
+    return fixed;
 }
 
