@@ -170,9 +170,21 @@ void NetClient::initiateoutSocket()
         else{
             const auto magicWord= data.left(4);
             qDebug() << "magicWord:" << magicWord.toHex();
-            auto command = data.mid(4,6);
-            const QString commandSTR = QString::fromUtf8(command);
-            qDebug() << "Command:" << commandSTR.trimmed();
+            QByteArray command2 = data.mid(4,12);
+            QByteArray command = QByteArray::fromRawData(command2, command2.length());
+            QByteArray::iterator iter = command.begin();
+            char fixed[255];
+            int index = 0;
+            while(iter != command.end())
+            {
+                QChar c = *iter;
+                if (c != '\0') fixed[index++] = c.toLatin1();
+                iter++;
+            }
+            fixed[index] = '\0';
+            qDebug() << "fixed :" << fixed << "\n";
+            const QString commandSTR = QString::fromUtf8(fixed);
+            qDebug() << "Command:" << commandSTR  << " / " << command;
             if(commandSTR.startsWith("inv"))
                 qDebug() << "caught Inv command .........................";
 
