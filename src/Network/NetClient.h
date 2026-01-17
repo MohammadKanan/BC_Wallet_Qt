@@ -21,6 +21,7 @@ private:
     void ToLittleEndian(QByteArray *ba);
     void initiateoutSocket();
     QByteArray ExtractCommand(const QByteArray data) const;
+    void ProccessInvMsg(const QByteArray invArray) const;
 
 
 signals:

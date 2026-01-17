@@ -49,7 +49,7 @@ std::string sha256(const std::string str)  {
 NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
-    //dnsLockUp* dns = new dnsLockUp;
+    dnsLockUp* dns = new dnsLockUp;
     this->initiateoutSocket();
     //buildPayload();
 }
@@ -67,7 +67,7 @@ void NetClient::startHandShake()
 
 QByteArray NetClient::buildVersionMsg()
 {
-    qDebug() << "Building HASH";
+    //qDebug() << "Building HASH";
     QByteArray data;
     data.append("F9BEB4D9"); // magic word
     data+= "76657273696F6E0000000000"; // "version command"
@@ -75,11 +75,11 @@ QByteArray NetClient::buildVersionMsg()
     // size
     const auto size = PL.length();
     auto sizeHex = QByteArray::number(size/2 , 16);
-    qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 8){
         sizeHex.append("0"); // make it 4 bytes
     }
-    qDebug() << "Size array final :" <<sizeHex << "/" <<  sizeHex.length();
+    //qDebug() << "Size array final :" <<sizeHex << "/" <<  sizeHex.length();
     data += sizeHex;
     // checksum
     //QByteArray payLoad = "7E1101000000000000000000C515CF6100000000000000000000000000000000000000000000FFFF2E13894A208D000000000000000000000000000000000000FFFF7F000001208D00000000000000000000000000";
@@ -87,7 +87,7 @@ QByteArray NetClient::buildVersionMsg()
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
     const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
     data += _checksum; // checksum
-    qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
+    //qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
     data += PL ;
     const auto data2 = QByteArray::fromHex(data);
     return data2;
@@ -107,9 +107,9 @@ QByteArray NetClient::buildVersinMSG_Payload()
     char frameBuffer[256];
     qToLittleEndian(_nowHex, frameBuffer);
     const auto result = QByteArray::fromRawData(reinterpret_cast<const char*>(frameBuffer), 16);
-    qDebug() << "LE Before :" << _nowHex;
+    //qDebug() << "LE Before :" << _nowHex;
     ToLittleEndian(&_nowHex);
-    qDebug() << "LE Time :" << _nowHex <<  "/";
+    //qDebug() << "LE Time :" << _nowHex <<  "/";
     payLoad.append(_nowHex);
     // Remote Services
     const auto remote_Services = "0000000000000000";
@@ -133,7 +133,7 @@ QByteArray NetClient::buildVersinMSG_Payload()
     payLoad.append(User_Agent);
     const auto Last_Block = "0000";
     payLoad.append(Last_Block);
-    qDebug() << "PAYLOAD :" << payLoad;
+    //qDebug() << "PAYLOAD :" << payLoad;
     return payLoad;
 }
 
@@ -144,56 +144,6 @@ void NetClient::ToLittleEndian(QByteArray *ba)
          std::reverse(ba->begin()+i, ba->begin()+i+2);
     }
 }
-
-void NetClient::initiateoutSocket()
-{
-    txSocket = QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
-    QObject::connect(txSocket.get() , &QTcpSocket::connected , this , [this](){
-        qDebug() << "Conn established!";
-        startHandShake();
-    });
-    QObject::connect(txSocket.get() , &QTcpSocket::disconnected , this, [](){
-        qDebug() << "Conn disconnect!";
-    });
-    QObject::connect(txSocket.get(), &QTcpSocket::readyRead , this, [&](){
-        // Read data from the socket
-        QByteArray data = txSocket->readAll();
-        QByteArray hexAsciiData = data.toHex();
-        //qDebug() << "Data received:" << hexAsciiData;
-        if(!verackSent){
-            data = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
-            const auto data2 = QByteArray::fromHex(data);
-            qDebug() << " Starting verAck............................";
-            sendMessage(data2);
-            verackSent = !verackSent;
-        }
-        {
-            const auto magicWord= data.left(4);
-            qDebug() << "magicWord:" << magicWord.toHex();
-            QByteArray command2 = data.mid(4,12);
-
-            QByteArray command = ExtractCommand(command2);
-            const QString commandSTR = QString::fromUtf8(command);
-            qDebug() << "Command:" << commandSTR  << " / " << command;
-            if(commandSTR.startsWith("inv"))
-                qDebug() << "caught Inv command .........................";
-
-            const auto size =data.mid(11,2).toInt();
-            qDebug() << "payload size:" << size;
-            const auto checksum = data.mid(14,4);
-            qDebug() << "Checksum :" << checksum;
-            const auto payload = data.mid(22,data.size()-1);
-            qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
-        }
-    });
-    QObject::connect(txSocket.get(), &QTcpSocket::errorOccurred , this , [&](){
-        qDebug() << "Socket error:" << txSocket->errorString();
-    });
-
-    txSocket->connectToHost("86.201.225.172",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
-
-}
-
 QByteArray NetClient::ExtractCommand(const QByteArray data) const
 {
     QByteArray command = QByteArray::fromRawData(data, data.length());
@@ -209,4 +159,71 @@ QByteArray NetClient::ExtractCommand(const QByteArray data) const
     fixed[index] = '\0';
     return fixed;
 }
+
+void NetClient::ProccessInvMsg(const QByteArray invArray) const
+{
+    qDebug() << "inv payload :" << invArray.toHex();
+    qDebug() << "Count = " << invArray.toHex().left(2);
+    const auto invHash = invArray.toHex().mid(2,32);
+    qDebug() << " Type:" << invHash.left(8);
+    qDebug() << " Hash" << invHash.mid(8,invHash.length()-1);
+
+}
+void NetClient::initiateoutSocket()
+{
+    txSocket = QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
+    QObject::connect(txSocket.get() , &QTcpSocket::connected , this , [this](){
+        qDebug() << "Conn established!";
+        startHandShake();
+    });
+    QObject::connect(txSocket.get() , &QTcpSocket::disconnected , this, [](){
+        qDebug() << "Conn disconnect!";
+    });
+    QObject::connect(txSocket.get(), &QTcpSocket::readyRead , this, [&](){
+        // Read data from the socket
+        bool isINV = false;
+        QByteArray data = txSocket->readAll();
+        QByteArray hexAsciiData = data.toHex();
+        //qDebug() << "Data received:" << hexAsciiData;
+        if(!verackSent){
+            QByteArray data1 = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
+            const auto data2 = QByteArray::fromHex(data1);
+            qDebug() << " Starting verAck............................";
+            sendMessage(data2);
+            verackSent = !verackSent;
+        }
+        {
+            const auto magicWord= data.left(4);
+            qDebug() << "magicWord:" << magicWord.toHex();
+            QByteArray command2 = data.mid(4,12);
+
+            QByteArray command = ExtractCommand(command2);
+            const QString commandSTR = QString::fromUtf8(command);
+            qDebug() << "Command:" << commandSTR  << " / " << command;
+            if(commandSTR.startsWith("inv")){
+                isINV = true;
+                qDebug() << "caught Inv command .........................";
+            }
+
+            const auto size =data.mid(16,4).toInt();
+            qDebug() << "payload size:" << size;
+            const auto checksum = data.mid(20,4);
+            qDebug() << "Checksum :" << checksum;
+            const auto payload = data.mid(24,data.size()-1);
+            qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
+            if(isINV){
+                isINV = false;
+                ProccessInvMsg(payload);
+            }
+        }
+    });
+    QObject::connect(txSocket.get(), &QTcpSocket::errorOccurred , this , [&](){
+        qDebug() << "Socket error:" << txSocket->errorString();
+    });
+
+    txSocket->connectToHost("188.138.39.205",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+
+}
+
+
 
