@@ -187,22 +187,24 @@ void NetClient::createGetData(const QByteArray countPlushash) const
 
     const auto _header = constructGetDataHeader(countPlushash);
     qDebug() << "getdata header :" << _header;
-    const auto MSG = QByteArray::fromHex(_header) + QByteArray::fromHex(countPlushash);
-    qDebug() << "GetData :" << MSG.toHex();
+    auto MSG = QByteArray::fromHex(_header );
+    MSG.append(QByteArray::fromHex(countPlushash));
+    qDebug() << "GetData :" << MSG;
     sendMessage(MSG);
 }
 
 QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const
 {
     const auto MagicWord = "F9BEB4D9";
-    const auto Command ="getdata";
-    //QByteArray _Command = QByteArray::fromHex(Command);
-    while(Command.length() < 12)
+    QByteArray Command ="getdata";
+    //
+    while(Command.length() < 24)
         Command.append("0");
+    QByteArray _Command = Command.toHex();
     const auto Size = invData.length();
     QByteArray GetDataHeader;
     GetDataHeader.append(MagicWord);
-    GetDataHeader.append(QByteArray::fromHex(Command));
+    GetDataHeader.append(_Command);
     auto sizeHex = QByteArray::number(Size/2 , 16);
     //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 8){
@@ -266,7 +268,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("15.235.56.220",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("86.201.225.172",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
