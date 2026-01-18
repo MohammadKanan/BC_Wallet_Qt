@@ -54,7 +54,7 @@ NetClient::NetClient(QObject *parent)
     //buildPayload();
 }
 
-void NetClient::sendMessage(QByteArray data)
+void NetClient::sendMessage(QByteArray data) const
 {
     txSocket->write(data);
 }
@@ -167,14 +167,51 @@ void NetClient::ProccessInvMsg(const QByteArray invArray) const
     const auto _Count = invArray.toHex().left(2);
     const auto count = _Count.toInt(&ok,16);
     qDebug() << "Count = " << count;
-
     const auto invHash = invArray.toHex().mid(2,invArray.toHex().length()-1);
     for(int i = 0 ; i < count ; i++){
-        qDebug() << " HASH " << i << "/" << invHash.mid(i,72);
+        int j = i*72;
+        QByteArray HASH = invHash.mid(j,72);
+
+        int index = HASH.indexOf("01000000");
+        HASH.replace(index,8,"01000040");
+        HASH.prepend("01");
+        qDebug() << " HASH " << i << "/" << HASH;
+        createGetData(HASH);
     }
-    //qDebug() << " Type:" << invHash.left(8);
-    //qDebug() << " Hash" << invHash.mid(8,invHash.length()-1);
-    qDebug() << " Hash" << invHash;
+
+
+}
+
+void NetClient::createGetData(const QByteArray countPlushash) const
+{
+
+    const auto _header = constructGetDataHeader(countPlushash);
+    qDebug() << "getdata header :" << _header;
+    const auto MSG = QByteArray::fromHex(_header) + QByteArray::fromHex(countPlushash);
+    qDebug() << "GetData :" << MSG.toHex();
+    sendMessage(MSG);
+}
+
+QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const
+{
+    const auto MagicWord = "F9BEB4D9";
+    const auto Command ="getdata";
+    //QByteArray _Command = QByteArray::fromHex(Command);
+    while(Command.length() < 12)
+        Command.append("0");
+    const auto Size = invData.length();
+    QByteArray GetDataHeader;
+    GetDataHeader.append(MagicWord);
+    GetDataHeader.append(QByteArray::fromHex(Command));
+    auto sizeHex = QByteArray::number(Size/2 , 16);
+    //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    while (sizeHex.length() < 8){
+        sizeHex.append("0"); // make it 4 bytes
+    }
+    qDebug() << "getData payload size:" << sizeHex;
+    GetDataHeader.append(sizeHex);
+    GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
+    return GetDataHeader;
 
 }
 void NetClient::initiateoutSocket()
@@ -215,10 +252,10 @@ void NetClient::initiateoutSocket()
 
             const auto size =data.mid(16,4).toInt();
             qDebug() << "payload size:" << size;
-            const auto checksum = data.mid(20,4);
+            const auto checksum = data.mid(20,4).toHex();
             qDebug() << "Checksum :" << checksum;
             const auto payload = data.mid(24,data.size()-1);
-            qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
+            //qDebug() << "Payload :" << "Size:" << data.length() << "/"<< payload.toHex();
             if(isINV){
                 isINV = false;
                 ProccessInvMsg(payload);
@@ -229,7 +266,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("188.138.39.205",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("15.235.56.220",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 

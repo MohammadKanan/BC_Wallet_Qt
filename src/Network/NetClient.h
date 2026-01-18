@@ -10,7 +10,7 @@ class NetClient : public QObject
     Q_OBJECT
 public:
     explicit NetClient(QObject *parent = nullptr);
-    void sendMessage(QByteArray data);
+    void sendMessage(QByteArray data) const;
 
 private:
     QSharedPointer<QTcpSocket> txSocket;
@@ -22,6 +22,8 @@ private:
     void initiateoutSocket();
     QByteArray ExtractCommand(const QByteArray data) const;
     void ProccessInvMsg(const QByteArray invArray) const;
+    void createGetData(const QByteArray countPlushash) const;
+    QByteArray constructGetDataHeader(const QByteArray invData) const;
 
 
 signals:
