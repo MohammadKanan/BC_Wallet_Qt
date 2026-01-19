@@ -69,7 +69,7 @@ QByteArray NetClient::buildVersionMsg()
 {
     //qDebug() << "Building HASH";
     QByteArray data;
-    data.append("F9BEB4D9"); // magic word
+    data.append(MagicWord); // magic word
     data+= "76657273696F6E0000000000"; // "version command"
     const auto PL = buildVersinMSG_Payload();
     // size
@@ -160,7 +160,7 @@ QByteArray NetClient::ExtractCommand(const QByteArray data) const
     return fixed;
 }
 
-void NetClient::ProccessInvMsg(const QByteArray invArray) const
+void NetClient::ProccessInvMsg(const QByteArray invArray) const // Bytes
 {
     qDebug() << "inv payload :" << invArray.toHex();
     bool ok;
@@ -182,7 +182,7 @@ void NetClient::ProccessInvMsg(const QByteArray invArray) const
 
 }
 
-void NetClient::createGetData(const QByteArray countPlushash) const
+void NetClient::createGetData(const QByteArray countPlushash) const //Bytes
 {
 
     const auto _header = constructGetDataHeader(countPlushash);
@@ -193,21 +193,20 @@ void NetClient::createGetData(const QByteArray countPlushash) const
     sendMessage(MSG);
 }
 
-QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const
+QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // bytes
 {
-    const auto MagicWord = "F9BEB4D9";
     QByteArray Command ="getdata";
     //
-    while(Command.length() < 24)
+    while(Command.length() < 23)
         Command.append("0");
     QByteArray _Command = Command.toHex();
     const auto Size = invData.length();
     QByteArray GetDataHeader;
     GetDataHeader.append(MagicWord);
     GetDataHeader.append(_Command);
-    auto sizeHex = QByteArray::number(Size/2 , 16);
+    auto sizeHex = QByteArray::number(Size , 16);
     //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
-    while (sizeHex.length() < 8){
+    while (sizeHex.length() < 4){
         sizeHex.append("0"); // make it 4 bytes
     }
     qDebug() << "getData payload size:" << sizeHex;
@@ -240,8 +239,8 @@ void NetClient::initiateoutSocket()
             verackSent = !verackSent;
         }
         {
-            const auto magicWord= data.left(4);
-            qDebug() << "magicWord:" << magicWord.toHex();
+            const auto _magicWord= data.left(4);
+            qDebug() << "magicWord:" << _magicWord.toHex();
             QByteArray command2 = data.mid(4,12);
 
             QByteArray command = ExtractCommand(command2);
@@ -268,7 +267,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("86.201.225.172",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("89.106.27.78",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
