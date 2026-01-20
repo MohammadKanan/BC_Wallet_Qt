@@ -168,6 +168,8 @@ void NetClient::ProccessInvMsg(const QByteArray invArray) const // Bytes
     const auto count = _Count.toInt(&ok,16);
     qDebug() << "Count = " << count;
     const auto invHash = invArray.toHex().mid(2,invArray.toHex().length()-1);
+    createGetData(invArray);
+    /*
     for(int i = 0 ; i < count ; i++){
         int j = i*72;
         QByteArray HASH = invHash.mid(j,72);
@@ -176,9 +178,10 @@ void NetClient::ProccessInvMsg(const QByteArray invArray) const // Bytes
         HASH.replace(index,8,"01000040");
         HASH.prepend("01");
         qDebug() << " HASH " << i << "/" << HASH;
+        HASH.prepend("01");
         createGetData(HASH);
     }
-
+    */
 
 }
 
@@ -190,15 +193,16 @@ void NetClient::createGetData(const QByteArray countPlushash) const //Bytes
     auto MSG = QByteArray::fromHex(_header );
     MSG.append(QByteArray::fromHex(countPlushash));
     qDebug() << "GetData :" << MSG;
-    sendMessage(MSG);
+    sendMessage(QByteArray::fromHex(MSG));
 }
 
 QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // bytes
 {
     QByteArray Command ="getdata";
     //
-    while(Command.length() < 23)
+    while(Command.length() < 12)
         Command.append("0");
+    Command = ("getdata00000");
     QByteArray _Command = Command.toHex();
     const auto Size = invData.length();
     QByteArray GetDataHeader;
@@ -211,7 +215,7 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
     }
     qDebug() << "getData payload size:" << sizeHex;
     GetDataHeader.append(sizeHex);
-    GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
+    //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
     return GetDataHeader;
 
 }
@@ -267,7 +271,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("89.106.27.78",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost("84.247.143.204",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 
