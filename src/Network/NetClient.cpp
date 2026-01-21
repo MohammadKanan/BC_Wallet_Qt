@@ -12,7 +12,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-
+QString NetClient::Peer_IP = "84.247.143.204";
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -203,7 +203,7 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
     while(Command.length() < 12)
         Command.append("0");
     Command = ("getdata00000");
-    QByteArray _Command = Command.toHex();
+    QByteArray _Command = QByteArray::fromHex(Command);
     const auto Size = invData.length();
     QByteArray GetDataHeader;
     GetDataHeader.append(MagicWord);
@@ -271,7 +271,7 @@ void NetClient::initiateoutSocket()
         qDebug() << "Socket error:" << txSocket->errorString();
     });
 
-    txSocket->connectToHost("84.247.143.204",8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
+    txSocket->connectToHost(NetClient::Peer_IP,8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
 }
 

@@ -25,6 +25,7 @@ private:
     void createGetData(const QByteArray countPlushash) const;
     QByteArray constructGetDataHeader(const QByteArray invData) const;
     const QByteArray MagicWord = "F9BEB4D9";
+    static QString Peer_IP;
 
 
 signals:
