@@ -191,9 +191,9 @@ void NetClient::createGetData(const QByteArray countPlushash) const //Bytes
     const auto _header = constructGetDataHeader(countPlushash);
     qDebug() << "getdata header :" << _header;
     auto MSG = QByteArray::fromHex(_header );
-    MSG.append(QByteArray::fromHex(countPlushash));
+    MSG.append(countPlushash);
     qDebug() << "GetData :" << MSG;
-    sendMessage(QByteArray::fromHex(MSG));
+    sendMessage(MSG);
 }
 
 QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // bytes
@@ -204,11 +204,14 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
         Command.append("0");
     Command = ("getdata00000");
     QByteArray _Command = QByteArray::fromHex(Command);
-    const auto Size = invData.length();
     QByteArray GetDataHeader;
     GetDataHeader.append(MagicWord);
     GetDataHeader.append(_Command);
-    auto sizeHex = QByteArray::number(Size , 16);
+    bool ok;
+    const auto _Count = invData.toHex().left(2);
+    const auto count = _Count.toInt(&ok,16);
+    //const auto Size = invData.length();
+    auto sizeHex = QByteArray::number(count);
     //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 4){
         sizeHex.append("0"); // make it 4 bytes
@@ -216,6 +219,7 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
     qDebug() << "getData payload size:" << sizeHex;
     GetDataHeader.append(sizeHex);
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
+    //GetDataHeader.append(QByteArray::fromStdString(sha256_2((invData).toStdString())).left(8));
     return GetDataHeader;
 
 }
