@@ -223,6 +223,35 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
     return GetDataHeader;
 
 }
+
+QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
+{
+    QByteArray Command ="pong";
+    //
+    while(Command.length() < 12)
+        Command.append("0");
+    Command = ("pong00000000");
+    QByteArray _Command = QByteArray::fromHex(Command);
+    QByteArray GetDataHeader;
+    GetDataHeader.append(MagicWord);
+    GetDataHeader.append(_Command);
+    bool ok;
+    const auto _Count = thePing.toHex().left(2);
+    const auto count = _Count.toInt(&ok,16);
+    auto sizeHex = QByteArray::number(count);
+    //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    while (sizeHex.length() < 4){
+        sizeHex.append("0"); // make it 4 bytes
+    }
+    qDebug() << "getData payload size:" << sizeHex;
+    GetDataHeader.append(sizeHex);
+    //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
+    GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
+    //
+    GetDataHeader.append(thePing);
+    return GetDataHeader;
+
+}
 void NetClient::initiateoutSocket()
 {
     txSocket = QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
@@ -268,6 +297,11 @@ void NetClient::initiateoutSocket()
             if(isINV){
                 isINV = false;
                 ProccessInvMsg(payload);
+            } else if (commandSTR.startsWith("ping")){
+                qDebug() << "ping message...............";
+                const auto pong = CreatePongMessage(payload);
+                sendMessage(pong);
+                qDebug() << "pong message sent: " << pong;
             }
         }
     });

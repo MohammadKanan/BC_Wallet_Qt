@@ -24,6 +24,7 @@ private:
     void ProccessInvMsg(const QByteArray invArray) const;
     void createGetData(const QByteArray countPlushash) const;
     QByteArray constructGetDataHeader(const QByteArray invData) const;
+    QByteArray CreatePongMessage(const QByteArray thePing) const;
     const QByteArray MagicWord = "F9BEB4D9";
     static QString Peer_IP;
 
