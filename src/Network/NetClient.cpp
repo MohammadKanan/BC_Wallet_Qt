@@ -12,7 +12,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "84.247.143.204";
+QString NetClient::Peer_IP = "172.233.48.73";
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -205,7 +205,7 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
     Command = ("getdata00000");
     QByteArray _Command = QByteArray::fromHex(Command);
     QByteArray GetDataHeader;
-    GetDataHeader.append(MagicWord);
+    GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(_Command);
     bool ok;
     const auto _Count = invData.toHex().left(2);
@@ -227,13 +227,10 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData) const // 
 QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
 {
     QByteArray Command ="pong";
-    //
-    while(Command.length() < 12)
-        Command.append("0");
     Command = ("pong00000000");
     QByteArray _Command = QByteArray::fromHex(Command);
     QByteArray GetDataHeader;
-    GetDataHeader.append(MagicWord);
+    GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(_Command);
     bool ok;
     const auto _Count = thePing.toHex().left(2);
@@ -246,7 +243,7 @@ QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
     qDebug() << "getData payload size:" << sizeHex;
     GetDataHeader.append(sizeHex);
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
-    GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
+    //GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
     //
     GetDataHeader.append(thePing);
     return GetDataHeader;
