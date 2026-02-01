@@ -20,7 +20,8 @@ private:
     void startHandShake();
     QByteArray buildVersionMsg();
     QByteArray buildVersinMSG_Payload();
-    void ToLittleEndian(QByteArray *ba);
+    void ToLittleEndian(QByteArray *ba) const;
+    void sendVerAck();
     void initiateoutSocket();
     QByteArray ExtractCommand(const QByteArray data) const;
     void ProccessInvMsg(const QByteArray invArray , const QByteArray check) const;

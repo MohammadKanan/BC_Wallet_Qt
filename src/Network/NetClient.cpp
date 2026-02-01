@@ -12,7 +12,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "40.142.147.118"; //149.112.12.106
+QString NetClient::Peer_IP = "82.64.135.218"; //149.112.12.106 //  // 172.234.90.215
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -62,6 +62,7 @@ void NetClient::sendMessage(QByteArray data) const
 void NetClient::startHandShake()
 {
     const auto versionMSG=buildVersionMsg();
+    qDebug() << " Version message :" << versionMSG.toHex();
     sendMessage(versionMSG);
 }
 
@@ -137,12 +138,21 @@ QByteArray NetClient::buildVersinMSG_Payload()
     return payLoad;
 }
 
-void NetClient::ToLittleEndian(QByteArray *ba)
+void NetClient::ToLittleEndian(QByteArray *ba) const
 {
     std::reverse(ba->begin(), ba->end());
     for (int i = 0 ; i < ba->length() ; i+=2){
          std::reverse(ba->begin()+i, ba->begin()+i+2);
     }
+}
+
+void NetClient::sendVerAck()
+{
+    QByteArray data1 = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
+    const auto data2 = QByteArray::fromHex(data1);
+    qDebug() << " Sending verAck............................";
+    sendMessage(data2);
+    verackSent = true;
 }
 QByteArray NetClient::ExtractCommand(const QByteArray data) const
 {
@@ -209,14 +219,17 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
     GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(_Command);
     bool ok;
-    const auto _Count = invData.toHex().left(2);
-    const auto count = _Count.toInt(&ok,16);
-    //const auto Size = invData.length();
-    auto sizeHex = QByteArray::number(count);
-    //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
-    while (sizeHex.length() < 8){
-        sizeHex.append("0"); // make it 4 bytes
+    const auto size = invData.length();
+    qDebug() << "GD size:" << size;
+    auto sizeHex = QByteArray::number(size , 16);
+    if(sizeHex.length() % 2 != 0){
+        sizeHex.prepend("0");
     }
+    qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    while (sizeHex.length() < 8){
+        sizeHex.prepend("0"); // make it 4 bytes
+    }
+    ToLittleEndian(&sizeHex);
     qDebug() << "getData payload size:" << sizeHex;
     GetDataHeader.append(QByteArray::fromHex(sizeHex));
     GetDataHeader.append(check);
@@ -229,22 +242,23 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
 QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
 {
     QByteArray Command = ("pong00000000");
-    QByteArray _Command = QByteArray::fromHex(Command);
+    QByteArray _Command = Command;
     QByteArray GetDataHeader;
-    GetDataHeader.append(QByteArray::fromHex(MagicWord));
+    GetDataHeader.append(MagicWord);
     GetDataHeader.append(_Command);
     bool ok;
-    const auto _Count = thePing.toHex().left(2);
-    const auto count = _Count.toInt(&ok,16);
-    auto sizeHex = QByteArray::number(count);
+    const auto _Count = thePing.length();
+    const auto count = QByteArray::number(_Count , 16);
+    auto sizeHex = count.toHex();
     //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 4){
         sizeHex.append("0"); // make it 4 bytes
     }
-    qDebug() << "pong payload size:" << sizeHex;
+    ToLittleEndian(&sizeHex);
+    qDebug() << "pong payload size:" <<QByteArray::fromHex(sizeHex);
     GetDataHeader.append(sizeHex);
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
-    GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
+    //GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
     //
     GetDataHeader.append(thePing);
     return GetDataHeader;
@@ -277,7 +291,6 @@ void NetClient::initiateoutSocket()
             qDebug() << "Command:" << commandSTR  << " / " << command;
             if(commandSTR.startsWith("inv")){
                 isINV = true;
-                qDebug() << "caught Inv command .........................";
             }
             //
             bool ok;
@@ -308,14 +321,14 @@ void NetClient::initiateoutSocket()
             }else if(commandSTR.startsWith("version") && !versionReceived){
                 versionReceived = true;
                 qDebug() << "version received .........";
-            } else if ((commandSTR.startsWith("verack") &&!verackSent) || versionReceived) {
+                sendVerAck();
+
+            } else if ((commandSTR.startsWith("verack") &&!verackSent) && versionReceived) {
                 verAckreceived = true;
-                QByteArray data1 = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
-                const auto data2 = QByteArray::fromHex(data1);
-                qDebug() << " Starting verAck............................";
-                sendMessage(data2);
-                verackSent = !verackSent;
-            qDebug() << "verAck received .....";
+                qDebug() << "verAck received .....";
+                sendVerAck();
+
+
 }
         }
     });
