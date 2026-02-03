@@ -12,7 +12,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "82.64.135.218"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::Peer_IP = "45.40.98.226"; //149.112.12.106 //  // 172.234.90.215
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -244,18 +244,18 @@ QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
     QByteArray Command = ("pong00000000");
     QByteArray _Command = Command;
     QByteArray GetDataHeader;
-    GetDataHeader.append(MagicWord);
+    GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(_Command);
     bool ok;
     const auto _Count = thePing.length();
     const auto count = QByteArray::number(_Count , 16);
-    auto sizeHex = count.toHex();
-    //qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
-    while (sizeHex.length() < 4){
-        sizeHex.append("0"); // make it 4 bytes
+    auto sizeHex = count;
+    qDebug() << "pong Size array :" <<sizeHex << "/" <<  count << "/" << _Count;
+    while (sizeHex.length() < 8){
+        sizeHex.prepend("0"); // make it 4 bytes
     }
     ToLittleEndian(&sizeHex);
-    qDebug() << "pong payload size:" <<QByteArray::fromHex(sizeHex);
+    qDebug() << "pong payload size:" << sizeHex << count;
     GetDataHeader.append(sizeHex);
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
@@ -321,7 +321,7 @@ void NetClient::initiateoutSocket()
             }else if(commandSTR.startsWith("version") && !versionReceived){
                 versionReceived = true;
                 qDebug() << "version received .........";
-                sendVerAck();
+                //sendVerAck();
 
             } else if ((commandSTR.startsWith("verack") &&!verackSent) && versionReceived) {
                 verAckreceived = true;
