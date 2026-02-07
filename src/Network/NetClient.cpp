@@ -12,7 +12,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "45.40.98.226"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::Peer_IP = "135.180.71.131"; //149.112.12.106 //  // 172.234.90.215
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -99,7 +99,7 @@ QByteArray NetClient::buildVersinMSG_Payload()
 {
     // version ..
     QByteArray payLoad;
-    payLoad.append("7F1101");
+    payLoad.append("7E1101");
     auto _services = "0000000000000000";
     payLoad.append(_services);
     // LE time
@@ -215,9 +215,9 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
 
     QByteArray Command = ("getdata00000");
     QByteArray GetDataHeader;
-    QByteArray _Command = QByteArray::fromHex(Command);
+    //QByteArray _Command = QByteArray::fromHex(Command);
     GetDataHeader.append(QByteArray::fromHex(MagicWord));
-    GetDataHeader.append(_Command);
+    GetDataHeader.append(Command);
     bool ok;
     const auto size = invData.length();
     qDebug() << "GD size:" << size;
@@ -256,7 +256,7 @@ QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
     }
     ToLittleEndian(&sizeHex);
     qDebug() << "pong payload size:" << sizeHex << count;
-    GetDataHeader.append(sizeHex);
+    GetDataHeader.append(QByteArray::fromHex(sizeHex));
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
     //
@@ -318,7 +318,7 @@ void NetClient::initiateoutSocket()
                 qDebug() << "pong message sent: " << pong.toHex();
             }else if(commandSTR.startsWith("reject")){
                 qDebug() << "Reject payload :" << payload;
-            }else if(commandSTR.startsWith("version") && !versionReceived){
+            }else if(commandSTR.startsWith("version" ) &&!verackSent && !versionReceived){
                 versionReceived = true;
                 qDebug() << "version received .........";
                 //sendVerAck();

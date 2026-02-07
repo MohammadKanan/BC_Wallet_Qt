@@ -20,7 +20,7 @@ private:
     QString Pieter = "seed.bitcoin.sipa.be";
     QString Luke = "dnsseed.bitcoin.dashjr.org";
     QString Provoost = "seed.bitcoin.sprovoost.nl";
-    QStringList Seeds{Pieter, Luke , Provoost};
+    QStringList Seeds{Luke, Pieter , Provoost};
     QList<QPair<QString, QString> > KnownHosts;
 
 signals:
