@@ -10,6 +10,7 @@ Connection::Connection(QString PeerIPAddress, QObject *parent)
     : QObject{parent}
 {
     Peer_IP = PeerIPAddress;
+    setObjectName(this->Peer_IP);
     this->CreateConnection();
     QObject::connect(&connTimer , &QTimer::timeout , this , &Connection::startConnection);
     connTimer.setInterval(2000);
@@ -48,9 +49,10 @@ void Connection::CreateConnection()
     BC_Socket =  QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
     QObject::connect(BC_Socket.get() , &QTcpSocket::connected , this , [this](){
         qDebug() << "Conn established!";
+        this->sendVersion();
     });
-    QObject::connect(BC_Socket.get() , &QTcpSocket::disconnected , this, [](){
-        qDebug() << "Conn disconnect!";
+    QObject::connect(BC_Socket.get() , &QTcpSocket::disconnected , this, [&](){
+        qDebug() << "Conn disconnect!" << this->objectName();
     });
     QObject::connect(BC_Socket.get(), &QTcpSocket::readyRead , this , &Connection::ProccessSocket);
 
@@ -62,8 +64,9 @@ void Connection::ProccessSocket()
     QByteArray data = BC_Socket->readAll();
     QByteArray hexAsciiData = data.toHex();
     const auto _magicWord= data.left(4);
-    if(_magicWord != this->MagicWord){
+    if(_magicWord.toHex() != this->MagicWord){
         qDebug() << "Wrong magic word .... dropping connection";
+        connTimer.stop();
         BC_Socket->disconnectFromHost();
         return;
     }
@@ -212,11 +215,6 @@ void Connection::sendGetData(const QByteArray inventory)
     const auto size = inventory.length();
     qDebug() << "GD size:" << size;
     auto sizeHex = QByteArray::number(size , 16);
-    /*
-    if(sizeHex.length() % 2 != 0){
-        sizeHex.prepend("0");
-    }
-    */
     qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 8){
         sizeHex.prepend("0"); // make it 4 bytes
