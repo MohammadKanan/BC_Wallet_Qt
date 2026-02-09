@@ -1,4 +1,5 @@
 #include "NetClient.h"
+#include "Connection.h"
 #include "src/Network/dnsLockUp.h"
 #include <openssl/sha.h>
 #include <sstream>
@@ -12,7 +13,8 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "135.180.71.131"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::Peer_IP = "24.165.18.174"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::localNode = "127.0.0.1";
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -50,7 +52,15 @@ NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
     dnsLockUp* dns = new dnsLockUp;
-    this->initiateoutSocket();
+    Connection* remote = new Connection(Peer_IP);
+    Connection* local = new Connection("127.0.0.1");
+    /*
+    for (const auto &x : qAsConst(dnsLockUp::KnownHosts)){
+        qDebug() << "Host :" << x.second;
+        Connection* conn = new Connection(x.second);
+    }
+    */
+    //this->initiateoutSocket();
     //buildPayload();
 }
 
@@ -59,11 +69,20 @@ void NetClient::sendMessage(QByteArray data) const
     txSocket->write(data);
 }
 
+void NetClient::sendMSG2Local(QByteArray data) const
+{
+    if(localSocket->state() == QAbstractSocket::ConnectedState)
+        localSocket->write(data);
+    else
+        qDebug() << "local BC not connected ....................";
+}
+
 void NetClient::startHandShake()
 {
     const auto versionMSG=buildVersionMsg();
     qDebug() << " Version message :" << versionMSG.toHex();
     sendMessage(versionMSG);
+    sendMSG2Local(versionMSG);
 }
 
 QByteArray NetClient::buildVersionMsg()
@@ -138,11 +157,11 @@ QByteArray NetClient::buildVersinMSG_Payload()
     return payLoad;
 }
 
-void NetClient::ToLittleEndian(QByteArray *ba) const
+void NetClient::ToLittleEndian(QByteArray *ba)
 {
     std::reverse(ba->begin(), ba->end());
     for (int i = 0 ; i < ba->length() ; i+=2){
-         std::reverse(ba->begin()+i, ba->begin()+i+2);
+        std::reverse(ba->begin()+i, ba->begin()+i+2);
     }
 }
 
@@ -154,7 +173,7 @@ void NetClient::sendVerAck()
     sendMessage(data2);
     verackSent = true;
 }
-QByteArray NetClient::ExtractCommand(const QByteArray data) const
+QByteArray NetClient::ExtractCommand(const QByteArray data)
 {
     QByteArray command = QByteArray::fromRawData(data, data.length());
     QByteArray::iterator iter = command.begin();
@@ -204,6 +223,7 @@ void NetClient::createGetData(const QByteArray countPlushash , const QByteArray 
     MSG.append(countPlushash) ;//(QByteArray::fromHex(countPlushash));
     qDebug() << "GetData :" << MSG.toHex();
     sendMessage(MSG);
+    sendMSG2Local(MSG);
 }
 
 QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QByteArray check) const // bytes
@@ -211,20 +231,21 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
     //QByteArray Command ="getdata";
     //
     //while(Command.length() < 12)
-        //Command.append("0");
+    //Command.append("0");
 
     QByteArray Command = ("getdata00000");
     QByteArray GetDataHeader;
-    //QByteArray _Command = QByteArray::fromHex(Command);
     GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(Command);
     bool ok;
     const auto size = invData.length();
     qDebug() << "GD size:" << size;
     auto sizeHex = QByteArray::number(size , 16);
+    /*
     if(sizeHex.length() % 2 != 0){
         sizeHex.prepend("0");
     }
+    */
     qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
     while (sizeHex.length() < 8){
         sizeHex.prepend("0"); // make it 4 bytes
@@ -232,7 +253,8 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
     ToLittleEndian(&sizeHex);
     qDebug() << "getData payload size:" << sizeHex;
     GetDataHeader.append(QByteArray::fromHex(sizeHex));
-    GetDataHeader.append(check);
+    qDebug() << "getdata checksum is :" << check;
+    GetDataHeader.append((QByteArray::fromHex(check)));
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
     //GetDataHeader.append(QByteArray::fromStdString(sha256_2((invData).toStdString())).left(8));
     return GetDataHeader;
@@ -269,6 +291,7 @@ void NetClient::initiateoutSocket()
     txSocket = QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
     QObject::connect(txSocket.get() , &QTcpSocket::connected , this , [this](){
         qDebug() << "Conn established!";
+        this->startConnLocal();
         startHandShake();
     });
     QObject::connect(txSocket.get() , &QTcpSocket::disconnected , this, [](){
@@ -288,7 +311,7 @@ void NetClient::initiateoutSocket()
 
             QByteArray command = ExtractCommand(command2);
             const QString commandSTR = QString::fromUtf8(command);
-            qDebug() << "Command:" << commandSTR  << " / " << command;
+            qDebug() << "Command:" << commandSTR ;
             if(commandSTR.startsWith("inv")){
                 isINV = true;
             }
@@ -298,8 +321,8 @@ void NetClient::initiateoutSocket()
             //const auto count = _Count.toInt(&ok,16);
             //auto sizeHex = QByteArray::number(count);
             //
-            //const auto size =data.mid(16,4).toHex();
-            //qDebug() << "payload size:" << size;
+            const auto size =data.mid(16,4).toHex();
+            qDebug() << "payload size:" << size;
             //const auto count = size.toInt(&ok,16);
             //qDebug() << "payload size:" << count;
             //auto sizeHex = QByteArray::number(count);
@@ -329,7 +352,7 @@ void NetClient::initiateoutSocket()
                 sendVerAck();
 
 
-}
+            }
         }
     });
     QObject::connect(txSocket.get(), &QTcpSocket::errorOccurred , this , [&](){
@@ -338,6 +361,21 @@ void NetClient::initiateoutSocket()
 
     txSocket->connectToHost(NetClient::Peer_IP,8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 
+}
+
+void NetClient::startConnLocal()
+{
+    localSocket = new QTcpSocket;
+    QObject::connect(localSocket , &QTcpSocket::connected , this , [this](){
+        qDebug() << "localSocket Conn established!";
+    });
+    QObject::connect(localSocket , &QTcpSocket::disconnected , this, [](){
+        qDebug() << "localSocket Conn disconnect!";
+    });
+    QObject::connect(localSocket, &QTcpSocket::errorOccurred , this , [&](){
+        qDebug() << "Socket status:" << localSocket->errorString();
+    });
+    localSocket->connectToHost(NetClient::localNode , 8333);
 }
 
 

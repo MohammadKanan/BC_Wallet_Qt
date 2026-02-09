@@ -25,7 +25,7 @@ set (Project_Headers
     src/Wallet.h
     src/Network/NetClient.h
     src/Network/dnsLockUp.h
-
+    src/Network/Connection.h
 )
 set (Project_Sources
     main.cpp
@@ -37,6 +37,7 @@ set (Project_Sources
     src/Wallet.cpp
     src/Network/NetClient.cpp
     src/Network/dnsLockUp.cpp
+    src/Network/Connection.cpp
 )
 qt_add_executable(${Project_Executable}
     ${Project_Headers}

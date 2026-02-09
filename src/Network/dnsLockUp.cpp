@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QTimer>
 
+QList<QPair<QString, QString> > dnsLockUp::KnownHosts={};
 dnsLockUp::dnsLockUp(QObject *parent)
     : QObject{parent}
 {
