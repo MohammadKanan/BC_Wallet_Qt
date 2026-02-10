@@ -16,9 +16,12 @@ Connection::Connection(QString PeerIPAddress, QObject *parent)
     connTimer.setInterval(2000);
     connTimer.setSingleShot(false);
     connTimer.start();
+    globalTimer.setInterval(2000);
+    globalTimer.setSingleShot(false);
+    globalTimer.start();
 }
 
-std::string Connection::sha256_2(const std::string input)
+std::string Connection::sha256_2(const std::string input) const
 {
     // Array to hold the 32-byte (256-bit) binary hash result
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -39,7 +42,7 @@ std::string Connection::sha256_2(const std::string input)
 void Connection::startConnection()
 {
     qDebug() << "Timer checking connection For :" << Peer_IP;
-    if(BC_Socket->state() == QAbstractSocket::ConnectedState){
+    if(BC_Socket->state() == QAbstractSocket::ConnectedState || this->abortPeer){
         connTimer.stop();
     } else this->CreateConnection();
 }
@@ -48,7 +51,7 @@ void Connection::CreateConnection()
 {
     BC_Socket =  QSharedPointer<QTcpSocket>(new QTcpSocket , &QObject::deleteLater);
     QObject::connect(BC_Socket.get() , &QTcpSocket::connected , this , [this](){
-        qDebug() << "Conn established!";
+        qDebug() << "Conn established! ... " << this->objectName();
         this->sendVersion();
     });
     QObject::connect(BC_Socket.get() , &QTcpSocket::disconnected , this, [&](){
@@ -64,18 +67,19 @@ void Connection::ProccessSocket()
     QByteArray data = BC_Socket->readAll();
     //QByteArray hexAsciiData = data.toHex();
     const auto _magicWord= data.left(4);
-     qDebug() << "magicWord:" << _magicWord.toHex();
+    qDebug() << "magicWord:" << _magicWord.toHex() << " ......" << this->objectName();
     if(_magicWord.toHex() != this->MagicWord){
-        qDebug() << "Wrong magic word .... dropping connection";
+        qDebug() << "Wrong magic word .... dropping connection" << " ......" << this->objectName();
+        this->abortPeer=true;
         connTimer.stop();
-        BC_Socket->disconnectFromHost();
-        return;
+        //BC_Socket->disconnectFromHost();
+        //return;
     }
     QByteArray command2 = data.mid(4,12);
 
     QByteArray command = NetClient::ExtractCommand(command2);
     const QString commandSTR = QString::fromUtf8(command);
-    qDebug() << "Command:" << commandSTR ;
+    qDebug() << "Command:" << commandSTR << " ......" << this->objectName();
     if(commandSTR.startsWith("inv")){
         isINV = true;
     }
@@ -89,29 +93,30 @@ void Connection::ProccessSocket()
     else if(commandSTR.startsWith("inv")) sendGetData(payload);
     else if ((commandSTR.startsWith("verack") &&!verackSent) && versionReceived) {
         verAckreceived = true;
-        qDebug() << "verAck received .....";
+        qDebug() << "verAck received ....." << " ......" << this->objectName();
         sendVerAck();
     } else if(commandSTR.startsWith("version" ) &&!verackSent && !versionReceived){
         versionReceived = true;
-        qDebug() << "version received .........";
+        qDebug() << "version received ........."<< " ......" << this->objectName();
         sendVerAck();
-    }
+    } //else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
 
 
 }
 
-void Connection::sendMessage(QByteArray data) const
+void Connection::sendMessage(const QByteArray data) const
 {
     BC_Socket->write(data);
 }
 
 void Connection::sendPong(const QByteArray pingPL) const
 {
+    qDebug() << "Pong checksum :" << this->MSG_checksum;
     QByteArray Command = ("pong00000000");
     QByteArray _Command = Command;
-    QByteArray GetDataHeader;
-    GetDataHeader.append(QByteArray::fromHex(MagicWord));
-    GetDataHeader.append(_Command);
+    QByteArray PongMsg;
+    PongMsg.append(QByteArray::fromHex(MagicWord));
+    PongMsg.append(_Command);
     bool ok;
     const auto _Count = pingPL.length();
     const auto count = QByteArray::number(_Count , 16);
@@ -122,12 +127,15 @@ void Connection::sendPong(const QByteArray pingPL) const
     }
     NetClient::ToLittleEndian(&sizeHex);
     qDebug() << "pong payload size:" << sizeHex << count;
-    GetDataHeader.append(QByteArray::fromHex(sizeHex));
-    //GetDataHeader.append(QByteArray::fromStdString(sha256_2(QByteArray::fromHex(invData).toStdString())).left(8));
-    //GetDataHeader.append(QByteArray::fromStdString(sha256_2((thePing).toStdString())).left(8));
+    PongMsg.append(QByteArray::fromHex(sizeHex));
+    const auto hash1 = QByteArray::fromStdString(sha256_2(pingPL.toStdString()));
+    const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
+    const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
+    qDebug() << "Pong generated checksum :" << _checksum;
+    PongMsg.append(QByteArray::fromHex(_checksum));
     //
-    GetDataHeader.append(pingPL);
-    sendMessage(GetDataHeader);
+    PongMsg.append(pingPL);
+    sendMessage(PongMsg);
 }
 
 void Connection::sendVersion()
@@ -153,8 +161,8 @@ void Connection::sendVersion()
     data += _checksum; // checksum
     //qDebug() << "HASH :" << hash1 <<  "//" << hash2 << " /////" << _checksum ;
     data += PL ;
-    const auto data2 = QByteArray::fromHex(data);
-    sendMessage(data2);
+    const auto VersionMSG = QByteArray::fromHex(data);
+    sendMessage(VersionMSG);
 }
 
 QByteArray Connection::CreateVersionPL()
@@ -198,34 +206,72 @@ QByteArray Connection::CreateVersionPL()
 void Connection::sendVerAck()
 {
     QByteArray data1 = "F9BEB4D976657261636B000000000000000000005DF6E0E2";
-    const auto data2 = QByteArray::fromHex(data1);
-    qDebug() << " Sending verAck............................";
-    sendMessage(data2);
+    const auto VerackMSG = QByteArray::fromHex(data1);
+    qDebug() << " Sending verAck............................" << " ......" << this->objectName();
+    sendMessage(VerackMSG);
     verackSent = true;
+    handShakeComplete = true;
 }
 
 void Connection::sendGetData(const QByteArray inventory)
 {
     // Header
-    QByteArray Command = ("getdata00000");
-    QByteArray GetDataHeader;
-    GetDataHeader.append(QByteArray::fromHex(MagicWord));
-    GetDataHeader.append(Command);
+    QByteArray Command = ("getdata");
+    while (Command.length() < 12)
+        Command.append("0");
+    QByteArray GetDataMSG;
+    GetDataMSG.append(QByteArray::fromHex(MagicWord));
+    GetDataMSG.append(Command);
     bool ok;
     const auto size = inventory.length();
     qDebug() << "GD size:" << size;
     auto sizeHex = QByteArray::number(size , 16);
-    qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length();
+    qDebug() << "Size array :" <<sizeHex << "/" <<  sizeHex.length() << " ......" << this->objectName();
     while (sizeHex.length() < 8){
         sizeHex.prepend("0"); // make it 4 bytes
     }
     NetClient::ToLittleEndian(&sizeHex);
     qDebug() << "getData payload size:" << sizeHex;
-    GetDataHeader.append(QByteArray::fromHex(sizeHex));
+    GetDataMSG.append(QByteArray::fromHex(sizeHex));
     qDebug() << "getdata checksum is :" << MSG_checksum;
-    GetDataHeader.append((QByteArray::fromHex(MSG_checksum)));
+
+    const auto hash1 = QByteArray::fromStdString(sha256_2(inventory.toStdString()));
+    const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString());
+    const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
+    qDebug() << "Local checksum :" << _checksum;
+    GetDataMSG.append(QByteArray::fromHex(_checksum));
     //
-    GetDataHeader.append(inventory);
-    qDebug() << "GetData :" << GetDataHeader.toHex();
-    sendMessage(GetDataHeader);
+    GetDataMSG.append(inventory);
+    qDebug() << "GetData :" << GetDataMSG.toHex() << " ......" << this->objectName();
+    sendMessage(GetDataMSG);
+    emit sendGlobalMSG(GetDataMSG);
+}
+
+void Connection::sendAgetData()
+{
+    qDebug() << "Sending auxilliary getdata ........";
+    const QByteArray data = "f9beb4d9676574646174613030303030d5010000c67462b20d010000008dbc30a1f09a32690c9a5bdc214e300f9d869f3f73a83b68c7578fe8290bc9c301000000d34bf3c0f6dd5e153fbb80ab7309471a1259e5450b92a96ff71ad693d8911d16010000005c9c96aa3695efe4a6be248185ddee3ba102a0f089b11acde4f731bd56893418010000001ef0fc3c220ab4950e699f97439a4846197b6073b16913975ff602ea35f694770100000090d2994afd6b71dda9da7de74d4fd395fe7594c9fc9514dfab1642da620e82bf0100000004198702815ca150b77c12835a31aa15ffcb422355726fb7c669e7d4c268cb96010000003170da97b110a666842bda364798ba9b4c60e528226d19bfa33bf2ce4a92caeb010000003d27db69e5286eee8a365d4b6c6ff3ce9f5d6e6e1a2a7fef94ba7485c6ffc797010000000ada87e9e2bbc2e29c5f2d645ef3aad5676d0d6c74755b0767c4cfa71fb5291101000000f59272b56ebd17aed7018f6938caae9ccbc02281179de06d63a4006f8006808201000000a7912ad9474896b26fedbdb736ff06c72f67faf36f343b6878025e51c72e1faf010000002857890101e8ca6c29cd12fd9d2016c972611ab792f5f53564762fbaa50ae5c10100000011557a3993abc0775359e797b9088eb2da0810ddcc30f0bf04959646be31fa68";
+    sendMessage(QByteArray::fromHex(data));
+}
+
+void Connection::HandleGlobalMSG(QByteArray data)
+{
+    qDebug() << " trying global msg .....";
+    this->globalMSG = data;
+    if(BC_Socket->state() == QAbstractSocket::ConnectedState && !this->abortPeer &&handShakeComplete){
+        this->sendMessage(data);
+        qDebug() << "Sending global msg ..." << this->objectName();
+        globalTimer.stop();
+    }
+    else {
+        qDebug() << "Node not connected ...aborting global msg ..." << this->objectName();
+        if(!globalTimer.isActive())
+            globalTimer.start();
+    }
+}
+
+void Connection::handleGlobalTimer()
+{
+    qDebug() << " global timer ... ...";
+    this->HandleGlobalMSG(globalMSG);
 }

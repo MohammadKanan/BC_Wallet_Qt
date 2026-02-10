@@ -52,8 +52,9 @@ NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
     dnsLockUp* dns = new dnsLockUp;
-    Connection* remote = new Connection(Peer_IP);
+    //Connection* remote = new Connection(Peer_IP);
     Connection* local = new Connection("127.0.0.1");
+    //QObject::connect(remote , &Connection::sendGlobalMSG , local , &Connection::HandleGlobalMSG);
     /*
     for (const auto &x : qAsConst(dnsLockUp::KnownHosts)){
         qDebug() << "Host :" << x.second;
