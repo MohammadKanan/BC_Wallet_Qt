@@ -13,7 +13,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "24.165.18.174"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::Peer_IP = "174.140.231.222"; //149.112.12.106 //  // 172.234.90.215
 QString NetClient::localNode = "127.0.0.1";
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result
@@ -52,8 +52,8 @@ NetClient::NetClient(QObject *parent)
     : QObject{parent}
 {
     dnsLockUp* dns = new dnsLockUp;
-    //Connection* remote = new Connection(Peer_IP);
-    Connection* local = new Connection("127.0.0.1");
+    Connection* remote = new Connection(Peer_IP);
+    //Connection* local = new Connection("127.0.0.1");
     //QObject::connect(remote , &Connection::sendGlobalMSG , local , &Connection::HandleGlobalMSG);
     /*
     for (const auto &x : qAsConst(dnsLockUp::KnownHosts)){
@@ -265,7 +265,7 @@ QByteArray NetClient::constructGetDataHeader(const QByteArray invData, const QBy
 QByteArray NetClient::CreatePongMessage(const QByteArray thePing) const
 {
     QByteArray Command = ("pong00000000");
-    QByteArray _Command = Command;
+    QByteArray _Command = QByteArray::fromHex(Command);
     QByteArray GetDataHeader;
     GetDataHeader.append(QByteArray::fromHex(MagicWord));
     GetDataHeader.append(_Command);
