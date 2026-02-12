@@ -99,7 +99,7 @@ void Connection::ProccessSocket()
         versionReceived = true;
         qDebug() << "version received ........."<< " ......" << this->objectName();
         sendVerAck();
-    } //else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
+    } else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
 
 
 }
@@ -113,7 +113,7 @@ void Connection::sendPong(const QByteArray pingPL) const
 {
     qDebug() << "Pong checksum :" << this->MSG_checksum;
     QByteArray Command = ("pong00000000");
-    QByteArray hexCommand = "706f6e673030303030303030";
+    QByteArray hexCommand = "706f6e670000000000000000";
     QByteArray PongMsg;
     PongMsg.append(MagicWord);
     PongMsg.append(hexCommand);
@@ -220,7 +220,7 @@ void Connection::sendGetData(const QByteArray inventory)
 {
     // Header
     QByteArray Command = "getdata00000";
-    QByteArray hexCommand = "676574646174613030303030";
+    QByteArray hexCommand = "676574646174610000000000";
     QByteArray GetDataMSG;
     GetDataMSG.append((MagicWord));
     GetDataMSG.append(hexCommand);
@@ -253,7 +253,7 @@ void Connection::sendGetData(const QByteArray inventory)
 void Connection::sendAgetData()
 {
     qDebug() << "Sending auxilliary getdata ........";
-    const QByteArray data = "f9beb4d9edaa0000091000000b39b5551040100000076575887088f29fb42ce71e3c5cfdabedb394957b66572b020df1dad4b3bfd4201000000ccb4abd157fa1d5febf6897e7a599efd623e657900c795c312291749bcab982e010000004c7890379e2d220cb0ccf9f8e935fd9586f2ce4e66a0ed358392c84cc63a0b2601000000da8ac80ebe883b1a65a513f4a4512e67f0a16c26b4aef698c07e6376d29d3aad";
+    const QByteArray data = "f9beb4d9676574646174610000000000210100003854a56e0801000000100e755d6ff0c3d30d5575ae656ae2c1ceeb036fdc72eb976e03f075acd068ff01000000feae03471b397bb6589bc4c3f9472cc2a4a7344648a93b1b79342dd957a74a5101000000ed046c655721ff20cdcc638a32af6b9bdeb55ae2081713046d695d3f150514e2010000004e9686c8fec1446510a469da9ee9b0407f55982bffaf4fdbed749af70f2a59e801000000026414a5fc339eb3a029baba43890b2d3383f66c6757783f5df2c67f29508ddf01000000a802ddd824db8a1c2b426ea1a18c312881fbe2ec9aad082e6d15252a4c11e54d010000004cb9a76511a874057cf7cb2c14a9fc75fedafca3487e2b78845537eea087ffaa0100000006a6aeda9e28704354ee266c94a103e41f1c68f4d15fcef874d5c23ef64481d9";
     sendMessage(QByteArray::fromHex(data));
 }
 
