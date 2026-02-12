@@ -173,7 +173,7 @@ void Connection::sendVersion()
 QByteArray Connection::CreateVersionPL()
 {
     QByteArray payLoad;
-    payLoad.append("801101"); //801101 //7E1101
+    payLoad.append("801101"); //7E1101
     auto _services = "0000000000000000";
     payLoad.append(_services);
     // LE time
@@ -258,13 +258,13 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
     const auto txVer = theTxMsg.mid(0,4);
     qDebug() << "Tx version :" << txVer.toHex();
     const auto count  = theTxMsg.mid(4,1);
-    qDebug() << "Input count :" << count.toHex();
     bool ok;
     const auto inputCount = count.toHex().toInt(&ok,16);
-    int _LoopCounter=0;
+    qDebug() << "Input count :" << inputCount;
+    int _LoopCounter=5;
+    // inputs
     for (int looper=1 ; looper <= inputCount ; looper++){
-    //qDebug() << "Input Count :" << count;
-        _LoopCounter += 5;
+        //_LoopCounter += 5;
     const auto tx1 = theTxMsg.mid( _LoopCounter ,32);
     qDebug() << " TX ID :" << tx1.toHex();
     _LoopCounter += 32;
@@ -284,6 +284,10 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
     _LoopCounter += 4;
     qDebug() << "Sequence : " << Sequence.toHex();
     }
+    // outouts
+    const auto O_count  = theTxMsg.mid(_LoopCounter,1);
+    const auto outputCount = O_count.toHex().toInt(&ok,16);
+    qDebug() << "Output count : " << outputCount;
 
 }
 

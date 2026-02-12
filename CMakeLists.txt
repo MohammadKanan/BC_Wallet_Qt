@@ -26,6 +26,7 @@ set (Project_Headers
     src/Network/NetClient.h
     src/Network/dnsLockUp.h
     src/Network/Connection.h
+    src/RefCode.txt
 )
 set (Project_Sources
     main.cpp
@@ -55,6 +56,7 @@ qt_add_qml_module(${Project_Executable}
         Main.qml
         SOURCES
         SOURCES
+
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
