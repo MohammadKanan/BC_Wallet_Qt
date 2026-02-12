@@ -37,6 +37,7 @@ private:
     QByteArray CreateVersionPL();
     void sendVerAck();
     void sendGetData(const QByteArray inventory);
+    void ProccessReceivedTX(const QByteArray theTxMsg);
     void sendAgetData();
 
 signals:

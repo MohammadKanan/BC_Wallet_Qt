@@ -65,10 +65,11 @@ void Connection::CreateConnection()
 void Connection::ProccessSocket()
 {
     QByteArray data = BC_Socket->readAll();
-    //QByteArray hexAsciiData = data.toHex();
-    const auto _magicWord= data.left(4);
+    QByteArray hexAsciiData = data.toHex();
+    qDebug() << " Received message :" << hexAsciiData;
+    const auto _magicWord = data.left(4);
     qDebug() << "magicWord:" << _magicWord.toHex() << " ......" << this->objectName();
-    if(_magicWord.toHex() != this->MagicWord){
+    if(_magicWord != QByteArray::fromHex(this->MagicWord)){
         qDebug() << "Wrong magic word .... dropping connection" << " ......" << this->objectName();
         this->abortPeer=true;
         connTimer.stop();
@@ -97,9 +98,10 @@ void Connection::ProccessSocket()
         sendVerAck();
     } else if(commandSTR.startsWith("version" ) &&!verackSent && !versionReceived){
         versionReceived = true;
-        qDebug() << "version received ........."<< " ......" << this->objectName();
+        qDebug() << "version received ........."<< payload.toHex() << this->objectName();
         sendVerAck();
-    } else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
+    } else if(commandSTR.startsWith("tx" )) ProccessReceivedTX(payload);
+    //else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
 
 
 }
@@ -171,7 +173,7 @@ void Connection::sendVersion()
 QByteArray Connection::CreateVersionPL()
 {
     QByteArray payLoad;
-    payLoad.append("7E1101");
+    payLoad.append("801101"); //801101 //7E1101
     auto _services = "0000000000000000";
     payLoad.append(_services);
     // LE time
@@ -248,6 +250,41 @@ void Connection::sendGetData(const QByteArray inventory)
     qDebug() << "GetData :" << GD.toHex() << " ......" << this->objectName();
     sendMessage( (GD));
     //emit sendGlobalMSG(GD);
+}
+
+void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
+{
+    qDebug() << "TX :" << theTxMsg.toHex();
+    const auto txVer = theTxMsg.mid(0,4);
+    qDebug() << "Tx version :" << txVer.toHex();
+    const auto count  = theTxMsg.mid(4,1);
+    qDebug() << "Input count :" << count.toHex();
+    bool ok;
+    const auto inputCount = count.toHex().toInt(&ok,16);
+    int _LoopCounter=0;
+    for (int looper=1 ; looper <= inputCount ; looper++){
+    //qDebug() << "Input Count :" << count;
+        _LoopCounter += 5;
+    const auto tx1 = theTxMsg.mid( _LoopCounter ,32);
+    qDebug() << " TX ID :" << tx1.toHex();
+    _LoopCounter += 32;
+    const auto VOUT = theTxMsg.mid(_LoopCounter ,4);
+    //NetClient::ToLittleEndian(&VOUT);
+    qDebug() << "Value out :" << VOUT.toHex();
+    _LoopCounter += 4;
+    const auto scriptsigsize = theTxMsg.mid(_LoopCounter , 1);
+    qDebug() << "scriptsigsize hex :" << scriptsigsize.toHex();
+    const auto scriptsigsize_Count = scriptsigsize.toHex().toInt(&ok,16);
+    qDebug() << "scriptsigsize :" << scriptsigsize_Count;
+    _LoopCounter += 1;
+    const auto scriptsig = theTxMsg.mid(_LoopCounter , scriptsigsize_Count);
+    qDebug() << "scriptsig :" << scriptsig.toHex();
+    _LoopCounter += scriptsigsize_Count;
+    const auto Sequence = theTxMsg.mid(_LoopCounter , 4 );
+    _LoopCounter += 4;
+    qDebug() << "Sequence : " << Sequence.toHex();
+    }
+
 }
 
 void Connection::sendAgetData()
