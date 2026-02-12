@@ -113,9 +113,10 @@ void Connection::sendPong(const QByteArray pingPL) const
 {
     qDebug() << "Pong checksum :" << this->MSG_checksum;
     QByteArray Command = ("pong00000000");
+    QByteArray hexCommand = "706f6e673030303030303030";
     QByteArray PongMsg;
     PongMsg.append(MagicWord);
-    PongMsg.append(Command);
+    PongMsg.append(hexCommand);
     bool ok;
     const auto _Count = pingPL.length();
     const auto count = QByteArray::number(_Count , 16);
@@ -136,7 +137,7 @@ void Connection::sendPong(const QByteArray pingPL) const
     QByteArray pg = QByteArray::fromHex(PongMsg);
     pg.append(pingPL);
     qDebug() << "png msg ..." << pg.toHex();
-    sendMessage(QByteArray::fromHex(pg));
+    sendMessage(pg);
 }
 
 void Connection::sendVersion()
@@ -219,9 +220,10 @@ void Connection::sendGetData(const QByteArray inventory)
 {
     // Header
     QByteArray Command = "getdata00000";
+    QByteArray hexCommand = "676574646174613030303030";
     QByteArray GetDataMSG;
     GetDataMSG.append((MagicWord));
-    GetDataMSG.append(QByteArray::fromHex(Command));
+    GetDataMSG.append(hexCommand);
     bool ok;
     const auto size = inventory.length();
     qDebug() << "GD size:" << size;
@@ -244,8 +246,8 @@ void Connection::sendGetData(const QByteArray inventory)
     QByteArray GD = QByteArray::fromHex(GetDataMSG);
     GD.append(inventory);
     qDebug() << "GetData :" << GD.toHex() << " ......" << this->objectName();
-    sendMessage(GD);
-    emit sendGlobalMSG(GD);
+    sendMessage( (GD));
+    //emit sendGlobalMSG(GD);
 }
 
 void Connection::sendAgetData()
