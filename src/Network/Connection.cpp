@@ -286,8 +286,20 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
     }
     // outouts
     const auto O_count  = theTxMsg.mid(_LoopCounter,1);
+    _LoopCounter += 1;
     const auto outputCount = O_count.toHex().toInt(&ok,16);
     qDebug() << "Output count : " << outputCount;
+    for (int looper =1 ; looper <= outputCount ; looper ++){
+       const auto amount = theTxMsg.mid(_LoopCounter ,8);
+       _LoopCounter += 8;
+       qDebug() << "  amount Value :" << amount.toHex();
+       const auto ScriptPubKeySize =  theTxMsg.mid(_LoopCounter ,1).toHex().toInt(&ok,16);
+       qDebug() << "scriptpubkeysize :" << ScriptPubKeySize;
+       _LoopCounter += 1;
+       const auto ScriptPubKey = theTxMsg.mid(_LoopCounter ,ScriptPubKeySize);
+       _LoopCounter += ScriptPubKeySize;
+       qDebug() << "ScriptPubKey :" <<ScriptPubKey.toHex();
+    }
 
 }
 
