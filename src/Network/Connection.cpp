@@ -300,6 +300,7 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
        _LoopCounter += ScriptPubKeySize;
        qDebug() << "ScriptPubKey :" <<ScriptPubKey.toHex();
     }
+    qDebug() << "LockTime" <<  theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
 
 }
 
