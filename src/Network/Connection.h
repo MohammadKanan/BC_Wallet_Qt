@@ -13,6 +13,7 @@ public:
     explicit Connection(QString PeerIPAddress, QObject *parent = nullptr);
     std::string sha256_2(const std::string input) const;
     QByteArray globalMSG;
+    static void ToLittleEndian(QByteArray *ba);
 
 private:
     QTimer connTimer;
@@ -31,6 +32,7 @@ private:
     QString Peer_IP;
     void CreateConnection();
     void ReadSocket();
+    int GetPayloadSizeFromHeader(const QByteArray data);
     void SplitMultipleCommands(const QByteArray data);
     void ProccessIncomingCommand(const QByteArray data);
     void sendMessage(const QByteArray data) const;

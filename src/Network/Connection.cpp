@@ -39,6 +39,14 @@ std::string Connection::sha256_2(const std::string input) const
     return ss.str();
 }
 
+void Connection::ToLittleEndian(QByteArray *ba)
+{
+    std::reverse(ba->begin(), ba->end());
+    for (int i = 0 ; i < ba->length() ; i+=2){
+        std::reverse(ba->begin()+i, ba->begin()+i+2);
+    }
+}
+
 void Connection::startConnection()
 {
     qDebug() << "Timer checking connection For :" << Peer_IP;
@@ -65,10 +73,21 @@ void Connection::CreateConnection()
 void Connection::ReadSocket()
 {
     QByteArray data = BC_Socket->readAll();
+    if(data.length() < GetPayloadSizeFromHeader(data)) //
+        qDebug() << "Incomplete commnd .... wait...";
     SplitMultipleCommands(data);
     //qDebug() << " Received message :" << hexAsciiData;
 
 
+}
+
+int Connection::GetPayloadSizeFromHeader(const QByteArray data)
+{
+     auto size =data.mid(16,4).toHex();
+    Connection::ToLittleEndian(&size);
+     bool ok;
+    const auto payloadSize = size.toInt(&ok,16);
+    qDebug() << "payload size:" << payloadSize;
 }
 
 void Connection::SplitMultipleCommands(const QByteArray data)
@@ -114,7 +133,7 @@ void Connection::ProccessIncomingCommand(const QByteArray data)
         isINV = true;
     }
     const auto size =data.mid(16,4).toHex();
-    qDebug() << "payload size:" << size;
+    //qDebug() << "payload size:" << size;
     MSG_checksum = data.mid(20,4).toHex();
     //qDebug() << "Checksum :" << checksum;
     const auto payload = data.mid(24,data.size()-1);
@@ -155,8 +174,8 @@ void Connection::sendPong(const QByteArray pingPL) const
     while (sizeHex.length() < 8){
         sizeHex.prepend("0"); // make it 4 bytes
     }
-    NetClient::ToLittleEndian(&sizeHex);
-    qDebug() << "pong payload size:" << sizeHex << count;
+    Connection::ToLittleEndian(&sizeHex);
+    //qDebug() << "pong payload size:" << sizeHex << count;
     PongMsg.append((sizeHex));
     const auto hash1 = QByteArray::fromStdString(sha256_2(pingPL.toStdString()));
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString()); // 2C2F86F3
@@ -208,7 +227,7 @@ QByteArray Connection::CreateVersionPL()
     auto _now = QDateTime::currentDateTime().toSecsSinceEpoch();
     QByteArray _nowHex = QByteArray::number(_now,16);
     //qDebug() << "LE Before :" << _nowHex;
-    NetClient::ToLittleEndian(&_nowHex);
+    Connection::ToLittleEndian(&_nowHex);
     //qDebug() << "LE Time :" << _nowHex <<  "/";
     payLoad.append(_nowHex);
     // Remote Services
@@ -262,7 +281,7 @@ void Connection::sendGetData(const QByteArray inventory)
     while (sizeHex.length() < 8){
         sizeHex.prepend("0"); // make it 4 bytes
     }
-    NetClient::ToLittleEndian(&sizeHex);
+    Connection::ToLittleEndian(&sizeHex);
     //qDebug() << "getData payload size:" << sizeHex;
     GetDataMSG.append(sizeHex);
     //qDebug() << "getdata checksum is :" << MSG_checksum;
@@ -297,7 +316,7 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
     qDebug() << " TX ID :" << tx1.toHex();
     _LoopCounter += 32;
     const auto VOUT = theTxMsg.mid(_LoopCounter ,4);
-    //NetClient::ToLittleEndian(&VOUT);
+    //Connection::ToLittleEndian(&VOUT);
     qDebug() << "Value out :" << VOUT.toHex();
     _LoopCounter += 4;
     const auto scriptsigsize = theTxMsg.mid(_LoopCounter , 1);
