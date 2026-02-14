@@ -57,16 +57,45 @@ void Connection::CreateConnection()
     QObject::connect(BC_Socket.get() , &QTcpSocket::disconnected , this, [&](){
         qDebug() << "Conn disconnect!" << this->objectName();
     });
-    QObject::connect(BC_Socket.get(), &QTcpSocket::readyRead , this , &Connection::ProccessSocket);
+    QObject::connect(BC_Socket.get(), &QTcpSocket::readyRead , this , &Connection::ReadSocket);
 
     BC_Socket->connectToHost(Peer_IP,8333); // 69.250.215.150 , 89.125.48.42 , 86.201.225.172
 }
 
-void Connection::ProccessSocket()
+void Connection::ReadSocket()
 {
     QByteArray data = BC_Socket->readAll();
+    SplitMultipleCommands(data);
+    //qDebug() << " Received message :" << hexAsciiData;
+
+
+}
+
+void Connection::SplitMultipleCommands(const QByteArray data)
+{
     QByteArray hexAsciiData = data.toHex();
-    qDebug() << " Received message :" << hexAsciiData;
+    //qDebug() << " Received message :" << hexAsciiData;
+    const auto _magicWord = data.left(4);
+    qDebug() << "magicWord:" << _magicWord.toHex() << " ......" << this->objectName();
+    int counter = data.count(_magicWord);
+    if( counter > 1){
+        qDebug() << "Found multiple commands ...." ;
+        int pos = data.indexOf(_magicWord);
+        while (pos != -1) {
+            int lastPos = pos;
+            pos = data.indexOf(_magicWord, pos + _magicWord.length()); // Search from next position
+            ProccessIncomingCommand(data.mid(lastPos,pos-lastPos));
+
+            //ProccessIncomingCommand(data.mid(lastPos,data.length()-1));
+        }
+
+    }  else ProccessIncomingCommand(data);
+
+
+}
+
+void Connection::ProccessIncomingCommand(const QByteArray data)
+{
     const auto _magicWord = data.left(4);
     qDebug() << "magicWord:" << _magicWord.toHex() << " ......" << this->objectName();
     if(_magicWord != QByteArray::fromHex(this->MagicWord)){
@@ -102,7 +131,6 @@ void Connection::ProccessSocket()
         sendVerAck();
     } else if(commandSTR.startsWith("tx" )) ProccessReceivedTX(payload);
     //else if (verackSent &&  commandSTR.startsWith("feefilter")) sendAgetData();
-
 
 }
 
@@ -235,19 +263,19 @@ void Connection::sendGetData(const QByteArray inventory)
         sizeHex.prepend("0"); // make it 4 bytes
     }
     NetClient::ToLittleEndian(&sizeHex);
-    qDebug() << "getData payload size:" << sizeHex;
+    //qDebug() << "getData payload size:" << sizeHex;
     GetDataMSG.append(sizeHex);
-    qDebug() << "getdata checksum is :" << MSG_checksum;
+    //qDebug() << "getdata checksum is :" << MSG_checksum;
 
     const auto hash1 = QByteArray::fromStdString(sha256_2(inventory.toStdString()));
     const auto hash2 = sha256_2(QByteArray::fromHex(hash1).toStdString());
     const QByteArray _checksum = QByteArray::fromStdString(hash2).left(8);
-    qDebug() << "Local checksum :" << _checksum;
+    //qDebug() << "Local checksum :" << _checksum;
     GetDataMSG.append(_checksum);
     //
     QByteArray GD = QByteArray::fromHex(GetDataMSG);
     GD.append(inventory);
-    qDebug() << "GetData :" << GD.toHex() << " ......" << this->objectName();
+    //qDebug() << "GetData :" << GD.toHex() << " ......" << this->objectName();
     sendMessage( (GD));
     //emit sendGlobalMSG(GD);
 }
@@ -300,7 +328,9 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
        _LoopCounter += ScriptPubKeySize;
        qDebug() << "ScriptPubKey :" <<ScriptPubKey.toHex();
     }
-    qDebug() << "LockTime" <<  theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
+    const auto LockTime = theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
+    if(theTxMsg.mid(_LoopCounter,theTxMsg.length()-1).length() > 4 ) qDebug() << " very long locktime ..............";
+    qDebug() << "LockTime :" <<  LockTime;
 
 }
 

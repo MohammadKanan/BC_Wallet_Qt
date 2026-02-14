@@ -30,7 +30,9 @@ private:
     const QByteArray MagicWord = "F9BEB4D9";
     QString Peer_IP;
     void CreateConnection();
-    void ProccessSocket();
+    void ReadSocket();
+    void SplitMultipleCommands(const QByteArray data);
+    void ProccessIncomingCommand(const QByteArray data);
     void sendMessage(const QByteArray data) const;
     void sendPong(const QByteArray pingPL) const;
     void sendVersion();
