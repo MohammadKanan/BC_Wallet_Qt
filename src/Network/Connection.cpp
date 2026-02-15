@@ -1,4 +1,5 @@
 #include "Connection.h"
+#include "RawMessage.h"
 #include "NetClient.h"
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -73,9 +74,16 @@ void Connection::CreateConnection()
 void Connection::ReadSocket()
 {
     QByteArray data = BC_Socket->readAll();
-    if(data.length() < GetPayloadSizeFromHeader(data)) //
+    const auto payload = data.mid(24,data.size()-1);
+    const auto theSize = payload.length();
+    if(theSize < GetPayloadSizeFromHeader(data)) {
+        newMSG->appendData(data);
         qDebug() << "Incomplete commnd .... wait...";
-    SplitMultipleCommands(data);
+    }
+    newMSG = new RawMessage(data);
+    if(newMSG->checkCompleteness())
+       emit newMSG->HandleMessage(newMSG->data);
+    //else SplitMultipleCommands(data);
     //qDebug() << " Received message :" << hexAsciiData;
 
 
@@ -83,11 +91,16 @@ void Connection::ReadSocket()
 
 int Connection::GetPayloadSizeFromHeader(const QByteArray data)
 {
+    const auto _magicWord = data.left(4);
+     if(_magicWord != QByteArray::fromHex(Connection::MagicWord))
+        return false;
      auto size =data.mid(16,4).toHex();
     Connection::ToLittleEndian(&size);
      bool ok;
     const auto payloadSize = size.toInt(&ok,16);
     qDebug() << "payload size:" << payloadSize;
+    return payloadSize;
+
 }
 
 void Connection::SplitMultipleCommands(const QByteArray data)

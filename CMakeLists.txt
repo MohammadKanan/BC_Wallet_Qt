@@ -26,6 +26,7 @@ set (Project_Headers
     src/Network/NetClient.h
     src/Network/dnsLockUp.h
     src/Network/Connection.h
+    src/Network/RawMessage.h
     src/RefCode.txt
 )
 set (Project_Sources
@@ -39,6 +40,7 @@ set (Project_Sources
     src/Network/NetClient.cpp
     src/Network/dnsLockUp.cpp
     src/Network/Connection.cpp
+    src/Network/RawMessage.cpp
 )
 qt_add_executable(${Project_Executable}
     ${Project_Headers}

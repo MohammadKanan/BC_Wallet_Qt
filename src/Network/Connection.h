@@ -5,6 +5,7 @@
 #include <QTcpSocket>
 #include <QDateTime>
 #include <QTimer>
+#include "RawMessage.h"
 
 class Connection : public QObject
 {
@@ -43,6 +44,7 @@ private:
     void sendGetData(const QByteArray inventory);
     void ProccessReceivedTX(const QByteArray theTxMsg);
     void sendAgetData();
+    RawMessage* newMSG;
 
 signals:
     void sendGlobalMSG(const QByteArray data) const;
