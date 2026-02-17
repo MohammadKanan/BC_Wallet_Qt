@@ -44,13 +44,14 @@ private:
     void sendGetData(const QByteArray inventory);
     void ProccessReceivedTX(const QByteArray theTxMsg);
     void sendAgetData();
-    RawMessage* newMSG;
+    void sendAddressV2();
+    RawMessage* newMSG=nullptr;
 
 signals:
-    void sendGlobalMSG(const QByteArray data) const;
+    //void sendGlobalMSG(const QByteArray data) const;
 
 public slots:
-    void HandleGlobalMSG(QByteArray data);
-    void handleGlobalTimer();
+    //void HandleGlobalMSG(QByteArray data);
+    //void handleGlobalTimer();
 
 };

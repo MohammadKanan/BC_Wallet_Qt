@@ -13,7 +13,7 @@
 #include <openssl/crypto.h>
 //
 // Function to perform a single SHA-256 hash
-QString NetClient::Peer_IP = "12.244.119.30"; //149.112.12.106 //  // 172.234.90.215
+QString NetClient::Peer_IP = "121.45.190.34"; //149.112.12.106 //  // 172.234.90.215
 QString NetClient::localNode = "127.0.0.1";
 std::string sha256_2(const std::string input) {
     // Array to hold the 32-byte (256-bit) binary hash result

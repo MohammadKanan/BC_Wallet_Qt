@@ -1,5 +1,4 @@
-#ifndef RAWMESSAGE_H
-#define RAWMESSAGE_H
+#pragma once
 
 #include <QObject>
 
@@ -13,6 +12,8 @@ public:
     void appendData(const QByteArray newData);
     bool checkCompleteness();
     QByteArray data;
+    bool Filled=false;
+    bool MessageProccessed = false;
 private:
 
     QByteArray magicWord;
@@ -27,4 +28,3 @@ signals:
     void HandleMessage(const QByteArray data);
 };
 
-#endif // RAWMESSAGE_H

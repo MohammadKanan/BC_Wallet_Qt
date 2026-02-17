@@ -1,6 +1,8 @@
 #include "RawMessage.h"
+#include "NetClient.h"
 #include <QObject>
 #include <QDebug>
+#include <QTimer>
 
 const QByteArray RawMessage::MagicWord = "F9BEB4D9";
 
@@ -45,20 +47,27 @@ void RawMessage::AnalyzeMessage()
 
     this->Command = RawMessage::ExtractCommand(_command);
     const QString commandSTR = QString::fromUtf8(this->Command);
-    qDebug() << "Command:" << commandSTR << " ......" << this->objectName();
+    //qDebug() << "Command:" << commandSTR << " ......" << this->objectName();
     bool ok;
-    this->PayloadSize = data.mid(16,4).toHex().toInt();
-    //qDebug() << "payload size:" << size;
+    auto size = data.mid(16,4).toHex();
+    NetClient::ToLittleEndian(&size);
+    this->PayloadSize = size.toInt(&ok,16);
+    qDebug() << "Message payload size:" << this->PayloadSize;
     this->checksum = data.mid(20,4).toHex();
     //qDebug() << "Checksum :" << checksum;
     this->payload = data.mid(24,data.size()-1);
-    const auto size = this->payload.length();
+    //const auto size = this->payload.length();
+    QTimer::singleShot(1000,this,&RawMessage::checkCompleteness);
+    //checkCompleteness();
 }
 
 bool RawMessage::checkCompleteness()
 {
-    if(this->payload.length() == this->PayloadSize){
+    if(!this->MessageProccessed && (static_cast<int>(this->payload.length()) == this->PayloadSize)){
         qDebug() << "Message boiled for proccessing ....";
+        this->Filled = true;
+        MessageProccessed = true;
+        emit HandleMessage(this->data);
         return true;
     }
     return false;

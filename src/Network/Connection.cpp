@@ -73,16 +73,35 @@ void Connection::CreateConnection()
 
 void Connection::ReadSocket()
 {
+    //qDebug() << "Reading socket ....";
     QByteArray data = BC_Socket->readAll();
-    const auto payload = data.mid(24,data.size()-1);
-    const auto theSize = payload.length();
-    if(theSize < GetPayloadSizeFromHeader(data)) {
-        newMSG->appendData(data);
-        qDebug() << "Incomplete commnd .... wait...";
+    //SplitMultipleCommands(data);
+    //return;
+    qDebug() << "New Message :" << data.toHex();
+    if(newMSG == nullptr){
+        newMSG = new RawMessage(data);
+        QObject::connect(newMSG, &RawMessage::HandleMessage , this, &Connection::SplitMultipleCommands);
     }
-    newMSG = new RawMessage(data);
-    if(newMSG->checkCompleteness())
-       emit newMSG->HandleMessage(newMSG->data);
+    if(!newMSG->data.startsWith(QByteArray::fromHex(Connection::MagicWord))){
+        newMSG->appendData(data);
+        newMSG->checkCompleteness();
+        qDebug() << "we here .......1";
+        return;
+    }
+    //SplitMultipleCommands(data);
+    //return;
+    const auto payload = data.mid(24,data.size()-1);
+    const int theSize = payload.length();
+    if( theSize != static_cast<int> (GetPayloadSizeFromHeader(newMSG->data))) {
+        newMSG->appendData(data);
+        newMSG->checkCompleteness();
+        qDebug() << "Incomplete commnd .... wait...";
+        qDebug() << "we here .......2";
+        return;
+    }
+    qDebug() << "we here .......3";
+    newMSG->checkCompleteness();
+       //emit newMSG->HandleMessage(newMSG->data);
     //else SplitMultipleCommands(data);
     //qDebug() << " Received message :" << hexAsciiData;
 
@@ -91,20 +110,22 @@ void Connection::ReadSocket()
 
 int Connection::GetPayloadSizeFromHeader(const QByteArray data)
 {
-    const auto _magicWord = data.left(4);
-     if(_magicWord != QByteArray::fromHex(Connection::MagicWord))
-        return false;
+    //const auto _magicWord = data.left(4);
+     //if(_magicWord != QByteArray::fromHex(Connection::MagicWord))
+        //return false;
      auto size =data.mid(16,4).toHex();
+    //const auto payload = data.mid(24,data.length()-1);
     Connection::ToLittleEndian(&size);
      bool ok;
-    const auto payloadSize = size.toInt(&ok,16);
-    qDebug() << "payload size:" << payloadSize;
+    const int payloadSize = size.toInt(&ok,16);
+    qDebug() << "checking payload size:" << payloadSize;
     return payloadSize;
 
 }
 
 void Connection::SplitMultipleCommands(const QByteArray data)
 {
+    newMSG = nullptr;
     QByteArray hexAsciiData = data.toHex();
     //qDebug() << " Received message :" << hexAsciiData;
     const auto _magicWord = data.left(4);
@@ -233,7 +254,7 @@ void Connection::sendVersion()
 QByteArray Connection::CreateVersionPL()
 {
     QByteArray payLoad;
-    payLoad.append("801101"); //7E1101
+    payLoad.append("7F1101"); //7E1101 //801101
     auto _services = "0000000000000000";
     payLoad.append(_services);
     // LE time
@@ -361,7 +382,7 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
        qDebug() << "ScriptPubKey :" <<ScriptPubKey.toHex();
     }
     const auto LockTime = theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
-    if(theTxMsg.mid(_LoopCounter,theTxMsg.length()-1).length() > 4 ) qDebug() << " very long locktime ..............";
+    if(LockTime.length() > 4 ) qDebug() << " very long locktime ..............";
     qDebug() << "LockTime :" <<  LockTime;
 
 }
@@ -373,24 +394,7 @@ void Connection::sendAgetData()
     sendMessage(QByteArray::fromHex(data));
 }
 
-void Connection::HandleGlobalMSG(QByteArray data)
+void Connection::sendAddressV2()
 {
-    qDebug() << " trying global msg .....";
-    this->globalMSG = data;
-    if(BC_Socket->state() == QAbstractSocket::ConnectedState && !this->abortPeer &&handShakeComplete){
-        this->sendMessage(data);
-        qDebug() << "Sending global msg ..." << this->objectName();
-        globalTimer.stop();
-    }
-    else {
-        qDebug() << "Node not connected ...aborting global msg ..." << this->objectName();
-        if(!globalTimer.isActive())
-            globalTimer.start();
-    }
-}
 
-void Connection::handleGlobalTimer()
-{
-    qDebug() << " global timer ... ...";
-    this->HandleGlobalMSG(globalMSG);
 }
