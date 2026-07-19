@@ -1,4 +1,5 @@
 #include "Wallet.h"
+#include <openssl/rsa.h>
 #include <iostream>  // Include iostream for std::cerr
 #include <openssl/rand.h>
 #include <openssl/pem.h>
@@ -36,11 +37,24 @@ void Wallet::generateKeys() {
     BIGNUM* exponent = BN_new();
     BN_set_word(exponent, RSA_F4);  // Public exponent
     RSA_generate_key_ex(privateKey, 2048, exponent, nullptr);
+    std::string xx = "720beaf6a512050df1122af977c9e53ef62276257770dd09e20c3af07da958be";
+    //privateKey = load_private_key_from_string(xx);
     qDebug() << "Key: " << privateKey;
     // Create a new RSA object for the public key and set its fields
     publicKey = RSA_new();
-    RSA_set0_key(publicKey, BN_dup(RSA_get0_n(privateKey)), BN_dup(exponent), nullptr);
-    
+    auto result = RSA_set0_key(publicKey, BN_dup(RSA_get0_n(privateKey)), BN_dup(exponent), nullptr);
+    if(result != 1 )
+        qDebug() << "RSA_set0_key Failed " << result;
+    qDebug() << "Public KEY :" << publicKey;
+    /// Generate hash / Wallet ID
+    ///
+    unsigned int len = strlen ((const char*) publicKey);
+    SHA256_CTX sha256;
+    SHA256_Init (&sha256);
+    SHA256_Update (&sha256, publicKey, len);
+    SHA256_Final (WalletAddress, &sha256);
+    qDebug() << "Wallet Hash :" << WalletAddress;
+    //
     // Free the exponent as it is duplicated in publicKey and privateKey
     BN_free(exponent);
 
@@ -71,8 +85,27 @@ float Wallet::getBalance()
 
 bool Wallet::storeWalletData()
 {
-    DataBaseMain db;
+
     db.StoreNewWallet(theID(), getPublicKey() , getPrivateKey() , getBalance());
+    return true;
+}
+
+RSA *Wallet::load_private_key_from_string(const std::string &private_key_pem)
+{
+    BIO* mem_bio = BIO_new_mem_buf(private_key_pem.c_str(), -1);
+    if (!mem_bio) {
+        std::cerr << "Failed to create BIO\n";
+        return nullptr;
+    }
+
+    RSA* rsa_private = PEM_read_bio_RSAPrivateKey(mem_bio, NULL, NULL, NULL); // Read the private key from the BIO
+    if (!rsa_private) {
+        qDebug() << "Error : " << (stderr); // Print OpenSSL errors
+        std::cerr << "Failed to read private key from string\n";
+    }
+
+    BIO_free(mem_bio); // Free the BIO object
+    return rsa_private;
 }
 
 // Method to send funds to another wallet
@@ -82,7 +115,9 @@ Transaction Wallet::sendFunds(Wallet& receiver, float amount) {
     int nonce = 12345;  // Replace with your nonce generation logic
 
     Transaction tx(id, receiver.id, amount, nonce);
+#if not defined(_WIN32) || not defined(WIN32)
     tx.sign(privateKey);  // Sign the transaction
+#endif
     std::cout << privateKey << std::endl;
 
     return tx;

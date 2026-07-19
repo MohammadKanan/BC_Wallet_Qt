@@ -3,7 +3,12 @@
 
 #include <string>
 #include <openssl/rsa.h>
+#ifdef __unix__
+ #define OS_Windows 0
 
+#elif defined(_WIN32) || defined(WIN32)
+ #define OS_Windows 1
+#endif
 class Transaction {
 public:
     std::string sender; // Sender's wallet ID
@@ -17,8 +22,9 @@ public:
     Transaction(std::string sender, std::string receiver, float amount, int nonce);
 
     // Method to sign the transaction with the sender's private key
+#if not defined(_WIN32) || not defined(WIN32)
     void sign(RSA* privateKey);
-
+#endif
     // Method to verify the transaction using the sender's public key
     bool verify(RSA* publicKey) const;
 

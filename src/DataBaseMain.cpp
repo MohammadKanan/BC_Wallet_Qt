@@ -67,6 +67,7 @@ bool DataBaseMain::CreateWalletsTable()
     sqlStatement = "CREATE TABLE IF NOT EXISTS ";
     sqlStatement += "Wallets ";
     sqlStatement += " (id INTEGER PRIMARY KEY NOT NULL, "
+                    "WalletName  varChar(20) ,"
                     "publicKey varchar(500) NOT NULL, "
                     "privateKey varchar(500), "
                     "balance decimal(6,2) , "
@@ -89,7 +90,7 @@ bool DataBaseMain::StoreNewWallet(std::string ID , RSA* pubKey , RSA* PrivKey, f
         return false;
     QSqlQuery query(bc_DB);
     QString sqlStatement;
-    sqlStatement = "INSERT INTO Wallets (id , publicKey , privateKey , balance , activeStatus) VALUES ('";
+    sqlStatement = "INSERT INTO Wallets (WalletName , publicKey , privateKey , balance , activeStatus) VALUES ('";
     sqlStatement += ID;
     sqlStatement += "'";
     sqlStatement += ",";
@@ -101,7 +102,7 @@ bool DataBaseMain::StoreNewWallet(std::string ID , RSA* pubKey , RSA* PrivKey, f
     sqlStatement += ",";
     sqlStatement += "1";
     sqlStatement += ");";
-    qDebug() << "Insert statement :" << sqlStatement;
+    //qDebug() << "Insert statement :" << sqlStatement;
     if(!query.exec(sqlStatement)){
         QString errorCode = query.lastError().text();
         qDebug() << errorCode;

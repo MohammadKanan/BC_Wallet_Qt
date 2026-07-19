@@ -4,6 +4,7 @@
 #include "src/Blockchain.h"
 #include "src/Wallet.h"
 #include "src/DataBaseMain.h"
+#include "src/Network/NetClient.h"
 Controller::Controller(QObject *parent)
     : QObject{parent}
 {}
@@ -11,7 +12,7 @@ Controller::Controller(QObject *parent)
 void Controller::StartOff()
 {
     auto dataB = DataBaseMain();
-
+    NetClient* nc = new NetClient;
     Blockchain myBlockchain;
     std::vector<Wallet*> wallets;
 

@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 
 project(BC_Wallet_Qt VERSION 0.1 LANGUAGES CXX)
 set (Project_Executable appBC_Wallet_Qt)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Sql Qml Quick Gui)
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Sql Qml Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Sql Qml Quick Gui Widgets)
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
 message( "OpenSSL found: Version ${OPENSSL_VERSION} , ${OPENSSL_INCLUDE_DIR}" )
@@ -22,7 +23,11 @@ set (Project_Headers
     src/Blockchain.h
     src/Transaction.h
     src/Wallet.h
-
+    src/Network/NetClient.h
+    src/Network/dnsLockUp.h
+    src/Network/Connection.h
+    src/Network/RawMessage.h
+    src/RefCode.txt
 )
 set (Project_Sources
     main.cpp
@@ -32,14 +37,20 @@ set (Project_Sources
     src/Blockchain.cpp
     src/Transaction.cpp
     src/Wallet.cpp
+    src/Network/NetClient.cpp
+    src/Network/dnsLockUp.cpp
+    src/Network/Connection.cpp
+    src/Network/RawMessage.cpp
 )
 qt_add_executable(${Project_Executable}
     ${Project_Headers}
     ${Project_Sources}
 )
 
+get_target_property(TARGET_CXX_STANDARD appBC_Wallet_Qt CXX_STANDARD)
+message(STATUS "The C++ standard for my_target is: ${TARGET_CXX_STANDARD}")
 
-target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql Qt6::Gui Qt6::Widgets ${OPENSSL_LIBRARIES})
+target_link_libraries(appBC_Wallet_Qt PRIVATE Qt6::Core Qt6::Sql Qt6::Gui Qt6::Widgets Qt6::Network ${OPENSSL_LIBRARIES})
 qt_add_qml_module(${Project_Executable}
     URI ${PROJECT_NAME}
     VERSION 1.0
@@ -47,6 +58,7 @@ qt_add_qml_module(${Project_Executable}
         Main.qml
         SOURCES
         SOURCES
+
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

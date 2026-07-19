@@ -17,6 +17,7 @@ private:
     bool CreateSQLLiteDB();
     bool CreateTables();
     bool CreateWalletsTable();
+    bool CreateDNSSeedsTable();
     QSqlDatabase bc_DB;
 
 signals:
