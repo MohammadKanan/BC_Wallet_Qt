@@ -5,6 +5,10 @@
 class RawMessage : public QObject
 {
     Q_OBJECT
+    enum MessageStatus{
+        newMsg  =1,
+        Proccessed =2
+    };
 public:
     explicit RawMessage(const QByteArray theData, QObject *parent = nullptr);
     static QByteArray ExtractCommand(const QByteArray data);

@@ -73,11 +73,11 @@ void Connection::CreateConnection()
 
 void Connection::ReadSocket()
 {
-    //qDebug() << "Reading socket ....";
+    qDebug() << "Reading socket ....";
     QByteArray data = BC_Socket->readAll();
     //SplitMultipleCommands(data);
     //return;
-    qDebug() << "New Message :" << data.toHex();
+    //qDebug() << "New Message :" << data.toHex();
     if(newMSG == nullptr){
         newMSG = new RawMessage(data);
         QObject::connect(newMSG, &RawMessage::HandleMessage , this, &Connection::SplitMultipleCommands);
@@ -92,18 +92,16 @@ void Connection::ReadSocket()
     //return;
     const auto payload = data.mid(24,data.size()-1);
     const int theSize = payload.length();
-    if( theSize != static_cast<int> (GetPayloadSizeFromHeader(newMSG->data))) {
+    if( theSize != static_cast<int>(GetPayloadSizeFromHeader(newMSG->data))) {
         newMSG->appendData(data);
-        newMSG->checkCompleteness();
-        qDebug() << "Incomplete commnd .... wait...";
-        qDebug() << "we here .......2";
+        //newMSG->checkCompleteness();
+        //qDebug() << "Incomplete commnd .... wait..." << theSize << "////" << GetPayloadSizeFromHeader(newMSG->data);
+        ProccessIncomingCommand(data);
+        qDebug() << "we here .......2" << data.toHex();
         return;
     }
-    qDebug() << "we here .......3";
+    qDebug() << "we here .......3" << data.toHex();
     newMSG->checkCompleteness();
-       //emit newMSG->HandleMessage(newMSG->data);
-    //else SplitMultipleCommands(data);
-    //qDebug() << " Received message :" << hexAsciiData;
 
 
 }
@@ -370,10 +368,11 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
     _LoopCounter += 1;
     const auto outputCount = O_count.toHex().toInt(&ok,16);
     qDebug() << "Output count : " << outputCount;
+    int outputNum=1;
     for (int looper =1 ; looper <= outputCount ; looper ++){
        const auto amount = theTxMsg.mid(_LoopCounter ,8);
        _LoopCounter += 8;
-       qDebug() << "  amount Value :" << amount.toHex();
+       qDebug() << "Output:" << outputNum++ << ":  amount Value :" << amount.toHex();
        const auto ScriptPubKeySize =  theTxMsg.mid(_LoopCounter ,1).toHex().toInt(&ok,16);
        qDebug() << "scriptpubkeysize :" << ScriptPubKeySize;
        _LoopCounter += 1;
@@ -381,10 +380,13 @@ void Connection::ProccessReceivedTX(const QByteArray theTxMsg)
        _LoopCounter += ScriptPubKeySize;
        qDebug() << "ScriptPubKey :" <<ScriptPubKey.toHex();
     }
-    const auto LockTime = theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
+    //const auto LockTime = theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
+    const auto LockTime = theTxMsg.mid(_LoopCounter ,4).toHex();
     if(LockTime.length() > 4 ) qDebug() << " very long locktime ..............";
     qDebug() << "LockTime :" <<  LockTime;
-
+    _LoopCounter += 4;
+    const auto restOfTxt = theTxMsg.mid(_LoopCounter ,theTxMsg.length()-1).toHex();
+    qDebug() << "Rest of Txn :" << restOfTxt;
 }
 
 void Connection::sendAgetData()
